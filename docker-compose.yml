@@ -1,0 +1,38 @@
+version: '3.9'
+services:
+  auth-service:
+    build: ./apps/auth-service
+    ports:
+      - "3001:3000"
+
+  user-service:
+    build: ./apps/user-service
+    ports:
+      - "3002:3000"
+
+  post-service:
+    build: ./apps/post-service
+    ports:
+      - "3003:3000"
+
+  media-service:
+    build: ./apps/media-service
+    ports:
+      - "3004:3000"
+
+  notification-service:
+    build: ./apps/notification-service
+    ports:
+      - "3005:3000"
+
+  chat-service:
+    build: ./apps/chat-service
+    ports:
+      - "3006:3000"
+
+  frontend:
+    build: ./apps/frontend-nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
