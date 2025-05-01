@@ -8,6 +8,7 @@ import {
   ForbiddenException,
   Query,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
@@ -17,6 +18,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Request } from 'express';
+import { Session } from './types/session.type';
 
 interface JwtRequest extends Request {
   user?: any;
@@ -57,13 +59,29 @@ export class AuthController {
     } catch {
       throw new ForbiddenException('Invalid refresh token');
     }
+    // Find all sessions for this user
+    const sessions: Session[] = await this.prisma.session.findMany({
+      where: {
+        userId: payload.sub,
+        expiresAt: { gte: new Date() }, // only non-expired
+      },
+    });
+    // Find a session with a matching refresh token
+    let validSession;
+    for (const session of sessions) {
+      if (await bcrypt.compare(refresh_token, session.refreshToken)) {
+        validSession = session;
+        break;
+      }
+    }
+    if (!validSession) {
+      throw new ForbiddenException('Invalid refresh token');
+    }
+    // Issue new access token
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
-    if (!user || !user.refreshToken)
-      throw new ForbiddenException('Invalid refresh token');
-    const isValid = await bcrypt.compare(refresh_token, user.refreshToken);
-    if (!isValid) throw new ForbiddenException('Invalid refresh token');
+    if (!user) throw new UnauthorizedException('User not found');
     const newAccessToken = await this.jwtService.signAsync(
       { sub: user.id, email: user.email },
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },

@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
+import { add } from 'date-fns';
 
 @Injectable()
 export class AuthService {
@@ -54,11 +55,16 @@ export class AuthService {
       { sub: user.id },
       { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
     );
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    const expiresAt = add(new Date(), { days: 7 });
 
-    // Hash and save refresh token to DB
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken: await bcrypt.hash(refreshToken, 10) },
+    // Create a new session
+    await this.prisma.session.create({
+      data: {
+        userId: user.id,
+        refreshToken: hashedRefreshToken,
+        expiresAt,
+      },
     });
 
     return {
