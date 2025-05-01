@@ -6,6 +6,8 @@ import {
   Req,
   UseGuards,
   ForbiddenException,
+  Query,
+  NotFoundException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
@@ -67,5 +69,18 @@ export class AuthController {
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
     );
     return { access_token: newAccessToken };
+  }
+
+  @Get('verify')
+  async verifyEmail(@Query('token') token: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { verificationToken: token },
+    });
+    if (!user) throw new NotFoundException('Invalid token');
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { isVerified: true, verificationToken: null },
+    });
+    return { message: 'Email verified successfully' };
   }
 }
