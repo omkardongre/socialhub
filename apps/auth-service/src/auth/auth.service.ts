@@ -36,12 +36,19 @@ export class AuthService {
       },
     });
     // Simulate sending email by logging the verification URL
-    console.log(`Verify your account: http://localhost:3000/auth/verify?token=${verificationToken}`);
-    return { userId: user.id, message: 'Signup successful. Please verify your email.' };
+    console.log(
+      `Verify your account: http://localhost:3000/auth/verify?token=${verificationToken}`,
+    );
+    return {
+      userId: user.id,
+      message: 'Signup successful. Please verify your email.',
+    };
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
     if (!user) throw new ForbiddenException('Invalid credentials');
     if (!user.isVerified) {
       throw new UnauthorizedException('Email not verified');
