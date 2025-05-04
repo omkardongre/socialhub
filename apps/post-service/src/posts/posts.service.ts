@@ -5,12 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { LikePostDto } from './dto/like-post.dto';
 import { firstValueFrom } from 'rxjs';
+import { UserRestService } from 'src/external/user/user.rest.service';
 
 @Injectable()
 export class PostsService {
   constructor(
     private prisma: PrismaService,
     private httpService: HttpService,
+    private userRestService: UserRestService,
   ) {}
 
   create(createPostDto: CreatePostDto) {
@@ -63,13 +65,7 @@ export class PostsService {
   }
 
   async getFeed(userId: string, pagination: { limit: number; offset: number }) {
-    // Call user-service to get following list
-    const response = await firstValueFrom(
-      this.httpService.get(
-        `http://user-service:3000/users/${userId}/following`,
-      ),
-    );
-    const followingUsers = response.data;
+    const followingUsers = await this.userRestService.getFollowing(userId);
     const followedIds = followingUsers.map((u: any) => u.id || u);
 
     return this.prisma.post.findMany({
@@ -79,5 +75,18 @@ export class PostsService {
       take: pagination.limit,
       include: { comments: true, likes: true },
     });
+  }
+
+  async getPostWithAuthor(postId: string) {
+    const post = await this.prisma.post.findUnique({ where: { id: postId } });
+
+    const authorProfile = await this.userRestService.getUserProfile(
+      post.userId,
+    );
+
+    return {
+      ...post,
+      author: authorProfile,
+    };
   }
 }
