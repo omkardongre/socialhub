@@ -1,12 +1,17 @@
 import { Injectable, ConflictException } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { LikePostDto } from './dto/like-post.dto';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class PostsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private httpService: HttpService,
+  ) {}
 
   create(createPostDto: CreatePostDto) {
     return this.prisma.post.create({
@@ -24,7 +29,7 @@ export class PostsService {
   }
 
   async addComment(postId: string, dto: CreateCommentDto) {
-    return this.prisma.comment.create({
+    return await this.prisma.comment.create({
       data: {
         postId,
         userId: dto.userId,
@@ -55,5 +60,24 @@ export class PostsService {
       this.prisma.like.count({ where: { postId } }),
     ]);
     return { comments, likesCount: likes };
+  }
+
+  async getFeed(userId: string, pagination: { limit: number; offset: number }) {
+    // Call user-service to get following list
+    const response = await firstValueFrom(
+      this.httpService.get(
+        `http://user-service:3000/users/${userId}/following`,
+      ),
+    );
+    const followingUsers = response.data;
+    const followedIds = followingUsers.map((u: any) => u.id || u);
+
+    return this.prisma.post.findMany({
+      where: { userId: { in: followedIds } },
+      orderBy: { createdAt: 'desc' },
+      skip: pagination.offset,
+      take: pagination.limit,
+      include: { comments: true, likes: true },
+    });
   }
 }
