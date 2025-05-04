@@ -19,11 +19,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Request } from 'express';
 import { Session } from './types/session.type';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+} from '@nestjs/swagger';
 
 interface JwtRequest extends Request {
   user?: any;
 }
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -33,22 +41,36 @@ export class AuthController {
   ) {}
 
   @Post('signup')
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiResponse({ status: 201, description: 'User created' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiBody({ type: SignupDto })
   async signup(@Body() dto: SignupDto) {
     return this.authService.signup(dto);
   }
 
   @Post('login')
+  @ApiOperation({ summary: 'Login and receive JWT tokens' })
+  @ApiResponse({ status: 201, description: 'Login successful' })
+  @ApiResponse({ status: 403, description: 'Invalid credentials' })
+  @ApiBody({ type: LoginDto })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Current user profile' })
   getProfile(@Req() req: JwtRequest) {
     return req.user;
   }
 
   @Post('refresh')
+  @ApiOperation({ summary: 'Refresh JWT tokens' })
+  @ApiResponse({ status: 201, description: 'Tokens refreshed' })
+  @ApiResponse({ status: 403, description: 'Invalid refresh token' })
   async refreshToken(@Body() body: { refresh_token: string }) {
     const { refresh_token } = body;
     let payload: any;
@@ -90,6 +112,9 @@ export class AuthController {
   }
 
   @Get('verify')
+  @ApiOperation({ summary: 'Verify user email' })
+  @ApiResponse({ status: 200, description: 'Email verified' })
+  @ApiResponse({ status: 404, description: 'Invalid token' })
   async verifyEmail(@Query('token') token: string) {
     const user = await this.prisma.user.findFirst({
       where: { verificationToken: token },
