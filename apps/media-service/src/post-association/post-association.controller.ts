@@ -7,9 +7,14 @@ export class PostAssociationController {
 
   @Patch('associate')
   async associatePostToMedia(@Body() dto: { mediaId: string; postId: string }) {
-    return this.prisma.media.update({
+    const updated = await this.prisma.media.update({
       where: { id: dto.mediaId },
       data: { postId: dto.postId },
     });
+    return {
+      success: true,
+      data: updated,
+      message: 'Media associated with post successfully',
+    };
   }
 }

@@ -20,42 +20,76 @@ export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  create(@Body() createPostDto: CreatePostDto) {
-    return this.postsService.create(createPostDto);
+  async create(@Body() createPostDto: CreatePostDto) {
+    const post = await this.postsService.create(createPostDto);
+    return {
+      success: true,
+      data: post,
+      message: 'Post created successfully',
+    };
   }
 
   @Get('user/:id')
-  findByUser(@Param('id') userId: string) {
-    return this.postsService.findByUser(userId);
+  async findByUser(@Param('id') userId: string) {
+    const posts = await this.postsService.findByUser(userId);
+    return {
+      success: true,
+      data: posts,
+      message: 'User posts retrieved successfully',
+    };
   }
 
   @Post(':id/comments')
-  addComment(@Param('id') postId: string, @Body() dto: CreateCommentDto) {
-    return this.postsService.addComment(postId, dto);
+  async addComment(@Param('id') postId: string, @Body() dto: CreateCommentDto) {
+    const comment = await this.postsService.addComment(postId, dto);
+    return {
+      success: true,
+      data: comment,
+      message: 'Comment added successfully',
+    };
   }
 
   @Post(':id/like')
-  likePost(@Param('id') postId: string, @Body() dto: LikePostDto) {
-    return this.postsService.likePost(postId, dto);
+  async likePost(@Param('id') postId: string, @Body() dto: LikePostDto) {
+    const result = await this.postsService.likePost(postId, dto);
+    return {
+      success: true,
+      data: result,
+      message: 'Post liked successfully',
+    };
   }
 
   @Get(':id/interactions')
-  getInteractions(@Param('id') postId: string) {
-    return this.postsService.getPostInteractions(postId);
+  async getInteractions(@Param('id') postId: string) {
+    const interactions = await this.postsService.getPostInteractions(postId);
+    return {
+      success: true,
+      data: interactions,
+      message: 'Post interactions retrieved successfully',
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('/feed')
-  getFeed(@Req() req, @Query() query: FeedQueryDto) {
+  async getFeed(@Req() req, @Query() query: FeedQueryDto) {
     const userId = req.user.userId;
-    return this.postsService.getFeed(userId, {
+    const feed = await this.postsService.getFeed(userId, {
       limit: Number(query.limit) || 10,
       offset: Number(query.offset) || 0,
     });
+    return {
+      success: true,
+      data: feed,
+      message: 'Feed retrieved successfully',
+    };
   }
 
   @Get('ping')
   ping() {
-    return { message: 'Post Service is live!' };
+    return {
+      success: true,
+      data: null,
+      message: 'Post Service is live!',
+    };
   }
 }

@@ -29,7 +29,11 @@ export class ProfilesController {
   @ApiOperation({ summary: 'Health check for profile service' })
   @ApiResponse({ status: 200, description: 'Profile service is healthy' })
   health() {
-    return 'ok';
+    return {
+      success: true,
+      data: 'ok',
+      message: 'Profile service is healthy',
+    };
   }
 
   @Get(':id')
@@ -39,7 +43,11 @@ export class ProfilesController {
   async getProfile(@Param('id') id: string) {
     const profile = await this.profilesService.getProfileByUserId(id);
     if (!profile) throw new NotFoundException('Profile not found');
-    return profile;
+    return {
+      success: true,
+      data: profile,
+      message: 'Profile retrieved successfully',
+    };
   }
 
   @Put()
@@ -61,6 +69,14 @@ export class ProfilesController {
     @Body() body: { bio?: string; avatarUrl?: string },
   ) {
     const userId = req.user.userId;
-    return this.profilesService.updateProfile(userId, body);
+    const updatedProfile = await this.profilesService.updateProfile(
+      userId,
+      body,
+    );
+    return {
+      success: true,
+      data: updatedProfile,
+      message: 'Profile updated successfullyERROR [PackageLoader] The "class-validator" package is missing. Please, make sure to install it to take advantage of ValidationPipe.',
+    };
   }
 }

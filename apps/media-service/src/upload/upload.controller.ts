@@ -22,6 +22,10 @@ export class UploadController {
       size: file.size,
       postId: body?.postId,
     });
-    return { success: true, media };
+    return {
+      success: true,
+      data: media,
+      message: 'File uploaded and metadata saved successfully',
+    };
   }
 }

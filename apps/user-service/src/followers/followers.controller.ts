@@ -27,27 +27,47 @@ export class FollowersController {
   @ApiOperation({ summary: 'Follow a user' })
   @ApiResponse({ status: 201, description: 'User followed' })
   async follow(@Req() req, @Param('id') userId: string) {
-    return this.followersService.followUser(req.user.userId, userId);
+    const result = await this.followersService.followUser(req.user.userId, userId);
+    return {
+      success: true,
+      data: result,
+      message: 'Successfully followed user'
+    };
   }
 
   @Delete('unfollow/:id')
   @ApiOperation({ summary: 'Unfollow a user' })
   @ApiResponse({ status: 200, description: 'User unfollowed' })
   async unfollow(@Req() req, @Param('id') userId: string) {
-    return this.followersService.unfollowUser(req.user.userId, userId);
+    const result = await this.followersService.unfollowUser(req.user.userId, userId);
+    return {
+      success: true,
+      data: result,
+      message: 'Successfully unfollowed user'
+    };
   }
 
   @Get('followers')
   @ApiOperation({ summary: 'Get your followers' })
   @ApiResponse({ status: 200, description: 'List of followers' })
   async getFollowers(@Req() req) {
-    return this.followersService.getFollowers(req.user.userId);
+    const followers = await this.followersService.getFollowers(req.user.userId);
+    return {
+      success: true,
+      data: followers,
+      message: 'Followers retrieved successfully'
+    };
   }
 
   @Get('following')
   @ApiOperation({ summary: 'Get users you are following' })
   @ApiResponse({ status: 200, description: 'List of following users' })
   async getFollowing(@Req() req) {
-    return this.followersService.getFollowing(req.user.userId);
+    const following = await this.followersService.getFollowing(req.user.userId);
+    return {
+      success: true,
+      data: following,
+      message: 'Following list retrieved successfully'
+    };
   }
 }
