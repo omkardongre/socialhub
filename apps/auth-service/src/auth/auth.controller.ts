@@ -46,7 +46,12 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiBody({ type: SignupDto })
   async signup(@Body() dto: SignupDto) {
-    return this.authService.signup(dto);
+    const result = await this.authService.signup(dto);
+    return {
+      success: true,
+      data: { userId: result.userId },
+      message: result.message,
+    };
   }
 
   @Post('login')
@@ -55,7 +60,12 @@ export class AuthController {
   @ApiResponse({ status: 403, description: 'Invalid credentials' })
   @ApiBody({ type: LoginDto })
   async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+    const tokens = await this.authService.login(dto);
+    return {
+      success: true,
+      data: tokens,
+      message: 'Login successful',
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -108,7 +118,11 @@ export class AuthController {
       { sub: user.id, email: user.email },
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
     );
-    return { access_token: newAccessToken };
+    return {
+      success: true,
+      data: { access_token: newAccessToken },
+      message: 'Tokens refreshed successfully',
+    };
   }
 
   @Get('verify')
@@ -124,6 +138,9 @@ export class AuthController {
       where: { id: user.id },
       data: { isVerified: true, verificationToken: null },
     });
-    return { message: 'Email verified successfully' };
+    return {
+      success: true,
+      message: 'Email verified successfully',
+    };
   }
 }

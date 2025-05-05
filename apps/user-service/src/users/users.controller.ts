@@ -6,8 +6,22 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 export class UsersController {
   @Get('ping')
   @ApiOperation({ summary: 'Ping the user service' })
-  @ApiResponse({ status: 200, description: 'User Service is live!' })
+  @ApiResponse({
+    status: 200,
+    description: 'User Service is live!',
+    schema: {
+      example: {
+        success: true,
+        data: null,
+        message: 'User Service is live!',
+      },
+    },
+  })
   ping() {
-    return { message: 'User Service is live!' };
+    return {
+      success: true,
+      data: null,
+      message: 'User Service is live!',
+    };
   }
 }
