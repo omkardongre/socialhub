@@ -40,6 +40,13 @@ export class AuthController {
     private prisma: PrismaService,
   ) {}
 
+  @Get('health')
+  @ApiOperation({ summary: 'Check health of the service' })
+  @ApiResponse({ status: 200, description: 'Service is healthy' })
+  healthCheck() {
+    return { status: 'ok' };
+  }
+
   @Post('signup')
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'User created' })
