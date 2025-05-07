@@ -76,7 +76,7 @@ export class ProfilesController {
     return {
       success: true,
       data: updatedProfile,
-      message: 'Profile updated successfullyERROR [PackageLoader] The "class-validator" package is missing. Please, make sure to install it to take advantage of ValidationPipe.',
+      message: 'Profile updated successfully',
     };
   }
 }

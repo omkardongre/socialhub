@@ -27,11 +27,14 @@ export class FollowersController {
   @ApiOperation({ summary: 'Follow a user' })
   @ApiResponse({ status: 201, description: 'User followed' })
   async follow(@Req() req, @Param('id') userId: string) {
-    const result = await this.followersService.followUser(req.user.userId, userId);
+    const result = await this.followersService.followUser(
+      req.user.userId,
+      userId,
+    );
     return {
       success: true,
       data: result,
-      message: 'Successfully followed user'
+      message: 'Successfully followed user',
     };
   }
 
@@ -39,11 +42,14 @@ export class FollowersController {
   @ApiOperation({ summary: 'Unfollow a user' })
   @ApiResponse({ status: 200, description: 'User unfollowed' })
   async unfollow(@Req() req, @Param('id') userId: string) {
-    const result = await this.followersService.unfollowUser(req.user.userId, userId);
+    const result = await this.followersService.unfollowUser(
+      req.user.userId,
+      userId,
+    );
     return {
       success: true,
       data: result,
-      message: 'Successfully unfollowed user'
+      message: 'Successfully unfollowed user',
     };
   }
 
@@ -55,7 +61,7 @@ export class FollowersController {
     return {
       success: true,
       data: followers,
-      message: 'Followers retrieved successfully'
+      message: 'Followers retrieved successfully',
     };
   }
 
@@ -67,7 +73,7 @@ export class FollowersController {
     return {
       success: true,
       data: following,
-      message: 'Following list retrieved successfully'
+      message: 'Following list retrieved successfully',
     };
   }
 }
