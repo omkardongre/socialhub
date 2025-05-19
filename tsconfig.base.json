@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@app/event-bus": ["libs/event-bus/src"],
+      "@app/event-bus/*": ["libs/event-bus/src/*"]
+    }
+  }
+}

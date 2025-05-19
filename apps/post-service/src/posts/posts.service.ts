@@ -9,6 +9,8 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 import { LikePostDto } from './dto/like-post.dto';
 import { UserRestService } from 'src/external/user/user.rest.service';
 import { MediaRestService } from 'src/external/media/media.rest.service';
+import { EventBusService } from '@app/event-bus/dist/event-bus.service';
+import { PostCreatedEvent } from '@app/event-bus/src/types/events';
 
 @Injectable()
 export class PostsService {
@@ -16,6 +18,7 @@ export class PostsService {
     private prisma: PrismaService,
     private userRestService: UserRestService,
     private mediaRestService: MediaRestService,
+    private eventBusService: EventBusService,
   ) {}
 
   async create(createPostDto: CreatePostDto) {
@@ -38,6 +41,14 @@ export class PostsService {
       });
     }
 
+    const event: PostCreatedEvent = {
+      postId: post.id,
+      userId: post.userId,
+      content: post.content,
+      mediaUrl: post.mediaUrl ?? undefined,
+      createdAt: post.createdAt,
+    };
+    this.eventBusService.publish('post.created', event);
     return post;
   }
 
