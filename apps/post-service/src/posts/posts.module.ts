@@ -5,10 +5,9 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { UserRestService } from '../external/user/user.rest.service';
 import { MediaRestService } from '../external/media/media.rest.service';
 import { HttpModule } from '@nestjs/axios';
-import { EventBusModule } from '@app/event-bus';
 
 @Module({
-  imports: [PrismaModule, HttpModule, EventBusModule],
+  imports: [PrismaModule, HttpModule],
   providers: [PostsService, UserRestService, MediaRestService],
   controllers: [PostsController],
 })
