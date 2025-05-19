@@ -1,8 +1,9 @@
 {
-  "$schema": "https://json.schemastore.org/nest-cli",
+  "$schema": "https://raw.githubusercontent.com/nestjs/cli/master/assets/nest-cli.schema.json",
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true
   }
 }
