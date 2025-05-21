@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { AuthExceptionFilter } from './common/filters/http-exception.filter';
+import { AuthExceptionFilter } from './common/filters/auth-exception.filter';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
