@@ -1,38 +1,135 @@
-version: '3.9'
+version: "3.9"
 services:
+  # Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # Message broker
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Single PostgreSQL instance with multiple databases
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_MULTIPLE_DATABASES: auth_db,user_db,post_db,notification_db,media_db,chat_db
+      POSTGRES_MULTIPLE_USERS: auth_user,user_user,post_user,notification_user,media_user,chat_user
+      POSTGRES_MULTIPLE_PASSWORDS: auth_pass,user_pass,post_pass,notification_pass,media_pass,chat_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Database Admin Tool
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  # Application Services
   auth-service:
     build: ./apps/auth-service
     ports:
       - "3001:3000"
+    env_file:
+      - ./apps/auth-service/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   user-service:
     build: ./apps/user-service
     ports:
       - "3002:3000"
+    env_file:
+      - ./apps/user-service/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   post-service:
     build: ./apps/post-service
     ports:
       - "3003:3000"
+    env_file:
+      - ./apps/post-service/.env
+    environment:
+      - DATABASE_URL=postgresql://admin:admin123@postgres:5432/post_db?schema=public
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   media-service:
     build: ./apps/media-service
     ports:
       - "3004:3000"
+    environment:
+      - DATABASE_URL=postgresql://media_user:media_pass@postgres:5432/media_db?schema=public
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   notification-service:
     build: ./apps/notification-service
     ports:
       - "3005:3000"
+    env_file:
+      - ./apps/notification-service/.env
+    environment:
+      - DATABASE_URL=postgresql://admin:admin123@postgres:5432/notification_db?schema=public
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   chat-service:
     build: ./apps/chat-service
     ports:
       - "3006:3000"
+    environment:
+      - DATABASE_URL=postgresql://chat_user:chat_pass@postgres:5432/chat_db?schema=public
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   frontend:
     build: ./apps/frontend-nextjs
     ports:
-      - "3000:3000"
+      - "3007:3000"
     environment:
       - NODE_ENV=development
+
+# Volumes for persistent data
+volumes:
+  postgres-data:
