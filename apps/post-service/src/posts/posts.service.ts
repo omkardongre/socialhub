@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +10,7 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 import { LikePostDto } from './dto/like-post.dto';
 import { UserRestService } from 'src/external/user/user.rest.service';
 import { MediaRestService } from 'src/external/media/media.rest.service';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class PostsService {
@@ -16,9 +18,24 @@ export class PostsService {
     private prisma: PrismaService,
     private userRestService: UserRestService,
     private mediaRestService: MediaRestService,
+    @Inject('RABBITMQ_SERVICE') private rabbitmqClient: ClientProxy,
   ) {}
 
   async create(createPostDto: CreatePostDto) {
+    // Check if user exists by trying to get their profile
+    try {
+      await this.userRestService.getUserProfile(createPostDto.userId);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new ConflictException(
+        `User with id ${createPostDto.userId} does not exist: ${errorMessage}`,
+      );
+    }
+
+    // If mediaId is provided, we'll try to associate it later
+    // The association will fail if the media doesn't exist
+
     const post = await this.prisma.post.create({
       data: {
         userId: createPostDto.userId,
@@ -32,11 +49,29 @@ export class PostsService {
         createPostDto.mediaId,
         post.id,
       );
+
+      if (!media?.url) {
+        throw new Error('Failed to get media URL from media service');
+      }
+
       await this.prisma.post.update({
         where: { id: post.id },
         data: { mediaUrl: media.url },
       });
+
+      // Update the post object with the new media URL
+      post.mediaUrl = media.url;
     }
+
+    // Emit post_created event
+    const postEvent = {
+      postId: post.id,
+      userId: post.userId,
+      content: post.content,
+      mediaUrl: post.mediaUrl || null,
+      createdAt: post.createdAt.toISOString(),
+    } as const;
+    this.rabbitmqClient.emit('post_created', postEvent);
 
     return post;
   }
@@ -84,7 +119,11 @@ export class PostsService {
 
   async getFeed(userId: string, pagination: { limit: number; offset: number }) {
     const followingUsers = await this.userRestService.getFollowing(userId);
-    const followedIds = followingUsers.map((u: any) => u.id || u);
+    const followedIds = followingUsers
+      .map((user: { id: string } | string) => {
+        return typeof user === 'string' ? user : user.id;
+      })
+      .filter((id): id is string => Boolean(id));
 
     return this.prisma.post.findMany({
       where: { userId: { in: followedIds } },
@@ -96,19 +135,29 @@ export class PostsService {
   }
 
   async getPostWithAuthor(postId: string) {
-    const post = await this.prisma.post.findUnique({ where: { id: postId } });
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+    });
 
     if (!post) {
       throw new NotFoundException('Post not found');
     }
 
-    const authorProfile = await this.userRestService.getUserProfile(
-      post.userId,
-    );
+    try {
+      const authorProfile = await this.userRestService.getUserProfile(
+        post.userId,
+      );
 
-    return {
-      ...post,
-      author: authorProfile,
-    };
+      return {
+        ...post,
+        author: authorProfile,
+      };
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch author profile';
+      throw new NotFoundException(`Error fetching author: ${errorMessage}`);
+    }
   }
 }
