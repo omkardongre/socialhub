@@ -18,7 +18,8 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 
-@UseGuards(JwtAuthGuard)
+// TODO: Add JWT guard
+// @UseGuards(JwtAuthGuard)
 @ApiTags('Profiles')
 @ApiBearerAuth()
 @Controller('profile')
