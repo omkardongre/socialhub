@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateProfileDto } from './dto/create-profile.dto';
 
 @Injectable()
 export class ProfilesService {
@@ -26,5 +27,24 @@ export class ProfilesService {
       }
       throw error;
     }
+  }
+
+  async createProfile(createProfileDto: CreateProfileDto) {
+    // Create both user and profile in a transaction
+    return this.prisma.$transaction(async (prisma) => {
+      const user = await prisma.user.create({
+        data: {
+          id: createProfileDto.userId,
+          email: createProfileDto.email,
+        },
+      });
+
+      return prisma.profile.create({
+        data: {
+          user: { connect: { id: user.id } },
+          name: createProfileDto.email.split('@')[0],
+        },
+      });
+    });
   }
 }
