@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Put,
+  Post,
   Body,
   Param,
   Req,
@@ -17,6 +18,7 @@ import {
   ApiResponse,
   ApiBody,
 } from '@nestjs/swagger';
+import { CreateProfileDto } from './dto/create-profile.dto';
 
 // TODO: Add JWT guard
 // @UseGuards(JwtAuthGuard)
@@ -30,6 +32,8 @@ export class ProfilesController {
   @ApiOperation({ summary: 'Health check for profile service' })
   @ApiResponse({ status: 200, description: 'Profile service is healthy' })
   health() {
+    console.log('******************');
+
     return {
       success: true,
       data: 'ok',
@@ -78,6 +82,21 @@ export class ProfilesController {
       success: true,
       data: updatedProfile,
       message: 'Profile updated successfully',
+    };
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create a new user profile' })
+  @ApiResponse({ status: 201, description: 'Profile created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async create(@Body() createProfileDto: CreateProfileDto) {
+    console.log('******************');
+    console.log(createProfileDto);
+    const profile = await this.profilesService.createProfile(createProfileDto);
+    return {
+      success: true,
+      data: profile,
+      message: 'Profile created successfully',
     };
   }
 }

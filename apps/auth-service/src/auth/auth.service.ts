@@ -3,6 +3,8 @@ import {
   ConflictException,
   ForbiddenException,
   UnauthorizedException,
+  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -11,12 +13,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { add } from 'date-fns';
+import { UserRestService } from 'src/external/user/user.rest.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private userRestService: UserRestService,
   ) {}
 
   async signup(dto: SignupDto) {
@@ -77,6 +81,34 @@ export class AuthService {
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
+    };
+  }
+  async verifyEmail(token: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { verificationToken: token },
+    });
+    if (!user) throw new NotFoundException('Invalid token');
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { isVerified: true, verificationToken: null },
+    });
+
+    try {
+      await this.userRestService.createUserProfile({
+        userId: user.id,
+        email: user.email,
+      });
+    } catch (error) {
+      console.error('Failed to create user profile:', error);
+      throw new InternalServerErrorException(
+        'Verification succeeded but profile creation failed',
+      );
+    }
+
+    return {
+      success: true,
+      message: 'Email verified and profile created successfully',
     };
   }
 }

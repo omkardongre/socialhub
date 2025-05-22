@@ -137,17 +137,6 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Email verified' })
   @ApiResponse({ status: 404, description: 'Invalid token' })
   async verifyEmail(@Query('token') token: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { verificationToken: token },
-    });
-    if (!user) throw new NotFoundException('Invalid token');
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { isVerified: true, verificationToken: null },
-    });
-    return {
-      success: true,
-      message: 'Email verified successfully',
-    };
+    return this.authService.verifyEmail(token);
   }
 }
