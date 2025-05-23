@@ -1,33 +1,57 @@
-import { Controller, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Logger,
+  Post,
+  HttpCode,
+  Body,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
-import { PostCreatedEventDto } from './dto/post-created-event.dto';
+import { NotificationsService } from './notifications.service';
+import { PostCreatedEvent, POST_CREATED } from '@libs/events';
 
 @Controller()
 export class NotificationsController {
   private readonly logger = new Logger(NotificationsController.name);
 
-  @EventPattern('post_created')
+  constructor(private readonly notificationsService: NotificationsService) {}
+
+  @EventPattern(POST_CREATED)
   public async handlePostCreated(
-    @Payload() data: PostCreatedEventDto,
+    @Payload() postCreatedEvent: PostCreatedEvent,
   ): Promise<void> {
     try {
-      this.logger.log(`Received post_created event: ${JSON.stringify(data)}`);
-
-      // Simulate async operation
-      await new Promise<void>((resolve) => setTimeout(resolve, 100));
-
-      // TODO: Save notification to database
-      // TODO: Send push/email notification if enabled in user preferences
-
-      this.logger.log(`Notification created for post ${data.postId}`);
+      this.logger.log(
+        `Received post_created event: ${JSON.stringify(postCreatedEvent)}`,
+      );
+      await this.notificationsService.createPostNotification({
+        userId: postCreatedEvent.data.userId,
+        postId: postCreatedEvent.data.postId,
+        content: postCreatedEvent.data.content,
+      });
+      this.logger.log(
+        `Notification created for post ${postCreatedEvent.data.postId}`,
+      );
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      const errorStack = error instanceof Error ? error.stack : undefined;
-
       this.logger.error(
         `Error processing post_created event: ${errorMessage}`,
-        errorStack,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
+
+  @Post('preferences')
+  @HttpCode(201)
+  async createDefaultPreferences(@Body() data: { userId: string }) {
+    try {
+      await this.notificationsService.createDefaultPreferences(data.userId);
+      return { success: true };
+    } catch (error) {
+      this.logger.error('Failed to create default preferences', error.stack);
+      throw new InternalServerErrorException(
+        'Failed to create default preferences',
       );
     }
   }

@@ -48,7 +48,9 @@ services:
 
   # Application Services
   auth-service:
-    build: ./apps/auth-service
+    build:
+      context: .
+      dockerfile: ./apps/auth-service/Dockerfile
     ports:
       - "3001:3000"
     env_file:
@@ -60,7 +62,9 @@ services:
         condition: service_healthy
 
   user-service:
-    build: ./apps/user-service
+    build:
+      context: .
+      dockerfile: ./apps/user-service/Dockerfile
     ports:
       - "3002:3000"
     env_file:
@@ -72,7 +76,9 @@ services:
         condition: service_healthy
 
   post-service:
-    build: ./apps/post-service
+    build:
+      context: .
+      dockerfile: ./apps/post-service/Dockerfile
     ports:
       - "3003:3000"
     env_file:
@@ -86,7 +92,9 @@ services:
         condition: service_healthy
 
   media-service:
-    build: ./apps/media-service
+    build:
+      context: .
+      dockerfile: ./apps/media-service/Dockerfile
     ports:
       - "3004:3000"
     environment:
@@ -98,7 +106,9 @@ services:
         condition: service_healthy
 
   notification-service:
-    build: ./apps/notification-service
+    build:
+      context: .
+      dockerfile: ./apps/notification-service/Dockerfile
     ports:
       - "3005:3000"
     env_file:
@@ -112,7 +122,9 @@ services:
         condition: service_healthy
 
   chat-service:
-    build: ./apps/chat-service
+    build:
+      context: .
+      dockerfile: ./apps/chat-service/Dockerfile
     ports:
       - "3006:3000"
     environment:
@@ -124,7 +136,9 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./apps/frontend-nextjs
+    build:
+      context: .
+      dockerfile: ./apps/frontend-nextjs/Dockerfile
     ports:
       - "3007:3000"
     environment:

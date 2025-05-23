@@ -8,9 +8,10 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { LikePostDto } from './dto/like-post.dto';
-import { UserRestService } from 'src/external/user/user.rest.service';
-import { MediaRestService } from 'src/external/media/media.rest.service';
+import { UserRestService } from '../external/user/user.rest.service';
+import { MediaRestService } from '../external/media/media.rest.service';
 import { ClientProxy } from '@nestjs/microservices';
+import { createPostCreatedEvent } from '@libs/events';
 
 @Injectable()
 export class PostsService {
@@ -64,14 +65,14 @@ export class PostsService {
     }
 
     // Emit post_created event
-    const postEvent = {
+    const postEvent = createPostCreatedEvent({
       postId: post.id,
       userId: post.userId,
       content: post.content,
-      mediaUrl: post.mediaUrl || null,
+      mediaUrl: post.mediaUrl || undefined,
       createdAt: post.createdAt.toISOString(),
-    } as const;
-    this.rabbitmqClient.emit('post_created', postEvent);
+    });
+    this.rabbitmqClient.emit(postEvent.event, postEvent);
 
     return post;
   }

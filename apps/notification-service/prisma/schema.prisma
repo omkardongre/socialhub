@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum NotificationType {
+  FOLLOW
+  LIKE
+  COMMENT
+  MENTION
+  SYSTEM
+  POST
+}
+
+enum EntityType {
+  POST
+  COMMENT
+  USER
+  SYSTEM
+}
+
+
+model Notification {
+  id         String   @id @default(uuid())
+  receiverId String
+  senderId   String?
+  type       NotificationType
+  entityType EntityType
+  entityId   String
+  isRead     Boolean  @default(false)
+  content    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model NotificationPreference {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  followNotifications  Boolean  @default(true)
+  likeNotifications    Boolean  @default(true)
+  commentNotifications Boolean  @default(true)
+  mentionNotifications Boolean  @default(true)
+  systemNotifications  Boolean  @default(true)
+  emailNotifications   Boolean  @default(false)
+  pushNotifications    Boolean  @default(false)
+  postNotifications    Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}

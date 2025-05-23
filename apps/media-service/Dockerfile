@@ -3,10 +3,18 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+# Copy package files first for better layer caching
+COPY apps/media-service/package*.json ./
+COPY apps/media-service/prisma ./prisma/
+
+# Install dependencies
 RUN npm install
 
-COPY . .
+# Copy the rest of the application
+COPY apps/media-service/ .
+
+# Generate Prisma client if needed
+RUN if [ -f "prisma/schema.prisma" ]; then npx prisma generate; fi
 
 EXPOSE 3000
 

@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@libs/events": ["libs/events/index"],
+      "@libs/events/*": ["libs/events/*"]
+    }
+  }
+}
