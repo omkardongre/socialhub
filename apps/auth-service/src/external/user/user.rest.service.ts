@@ -11,9 +11,6 @@ export class UserRestService {
 
   async createUserProfile(createProfileDto: CreateProfileDto) {
     const url = `${this.userServiceBaseUrl}/profile`;
-    console.log('******************');
-    console.log(url);
-    console.log(createProfileDto);
     const response = await firstValueFrom(
       this.http.post(url, createProfileDto),
     );

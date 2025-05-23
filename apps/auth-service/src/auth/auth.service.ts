@@ -14,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { add } from 'date-fns';
 import { UserRestService } from 'src/external/user/user.rest.service';
+import { NotificationRestService } from 'src/external/notification/notification.rest.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private userRestService: UserRestService,
+    private notificationRestService: NotificationRestService,
   ) {}
 
   async signup(dto: SignupDto) {
@@ -95,20 +97,24 @@ export class AuthService {
     });
 
     try {
+      // Create user profile
       await this.userRestService.createUserProfile({
         userId: user.id,
         email: user.email,
       });
+
+      // Create default notification preferences
+      await this.notificationRestService.createDefaultPreferences(user.id);
     } catch (error) {
       console.error('Failed to create user profile:', error);
       throw new InternalServerErrorException(
-        'Verification succeeded but profile creation failed',
+        'Verification succeeded but post-verification steps failed',
       );
     }
 
     return {
       success: true,
-      message: 'Email verified and profile created successfully',
+      message: 'Email verified and profile initialized successfully',
     };
   }
 }

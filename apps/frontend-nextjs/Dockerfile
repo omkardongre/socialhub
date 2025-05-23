@@ -3,10 +3,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+# Copy frontend package files
+COPY apps/frontend-nextjs/package*.json ./
 RUN npm install
 
-COPY . .
+# Copy the rest of the frontend app
+COPY apps/frontend-nextjs/ .
 
 EXPOSE 3000
 
