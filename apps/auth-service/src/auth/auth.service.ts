@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
@@ -31,7 +31,7 @@ export class AuthService {
     });
     if (existingUser) throw new ConflictException('Email already in use');
 
-    const hash = await bcrypt.hash(dto.password, 10);
+    const hash = await argon2.hash(dto.password);
     const verificationToken = randomUUID();
     const user = await this.prisma.user.create({
       data: {
@@ -59,7 +59,7 @@ export class AuthService {
     if (!user.isVerified) {
       throw new UnauthorizedException('Email not verified');
     }
-    const pwMatch = await bcrypt.compare(dto.password, user.password);
+    const pwMatch = await argon2.verify(user.password, dto.password);
     if (!pwMatch) throw new ForbiddenException('Invalid credentials');
 
     const payload = { sub: user.id, email: user.email };
@@ -68,7 +68,7 @@ export class AuthService {
       { sub: user.id },
       { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
     );
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    const hashedRefreshToken = await argon2.hash(refreshToken);
     const expiresAt = add(new Date(), { days: 7 });
 
     // Create a new session

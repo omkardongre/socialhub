@@ -5,12 +5,13 @@ import {
   HttpCode,
   Body,
   InternalServerErrorException,
+  Get,
 } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { NotificationsService } from './notifications.service';
 import { PostCreatedEvent, POST_CREATED } from '@libs/events';
 
-@Controller()
+@Controller('notifications')
 export class NotificationsController {
   private readonly logger = new Logger(NotificationsController.name);
 
@@ -54,5 +55,14 @@ export class NotificationsController {
         'Failed to create default preferences',
       );
     }
+  }
+
+  @Get('health')
+  health() {
+    return {
+      success: true,
+      data: 'ok',
+      message: 'Notification service is healthy',
+    };
   }
 }
