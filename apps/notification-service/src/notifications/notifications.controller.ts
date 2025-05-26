@@ -9,7 +9,12 @@ import {
 } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { NotificationsService } from './notifications.service';
-import { PostCreatedEvent, POST_CREATED } from '@libs/events';
+import {
+  PostCreatedEvent,
+  POST_CREATED,
+  UserFollowedEvent,
+  USER_FOLLOWED,
+} from '@libs/events';
 
 @Controller('notifications')
 export class NotificationsController {
@@ -55,6 +60,11 @@ export class NotificationsController {
         'Failed to create default preferences',
       );
     }
+  }
+
+  @EventPattern(USER_FOLLOWED)
+  async handleFollow(@Payload() event: UserFollowedEvent) {
+    await this.notificationsService.handleFollowEvent(event.data);
   }
 
   @Get('health')

@@ -32,8 +32,6 @@ export class ProfilesController {
   @ApiOperation({ summary: 'Health check for profile service' })
   @ApiResponse({ status: 200, description: 'Profile service is healthy' })
   health() {
-    console.log('******************');
-
     return {
       success: true,
       data: 'ok',
@@ -90,8 +88,6 @@ export class ProfilesController {
   @ApiResponse({ status: 201, description: 'Profile created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async create(@Body() createProfileDto: CreateProfileDto) {
-    console.log('******************');
-    console.log(createProfileDto);
     const profile = await this.profilesService.createProfile(createProfileDto);
     return {
       success: true,
