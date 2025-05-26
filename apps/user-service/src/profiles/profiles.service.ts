@@ -1,15 +1,43 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
 
 @Injectable()
 export class ProfilesService {
+  private readonly logger = new Logger(ProfilesService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async getProfileByUserId(userId: string) {
-    return this.prisma.profile.findUnique({
-      where: { userId },
-    });
+    try {
+      const profile = await this.prisma.profile.findUnique({
+        where: { userId },
+      });
+
+      if (!profile) {
+        this.logger.warn(`Profile not found for user ID: ${userId}`);
+        throw new NotFoundException('Profile not found');
+      }
+
+      return profile;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      this.logger.error(
+        `Failed to fetch profile for user ID: ${userId}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to fetch profile');
+    }
   }
 
   async updateProfile(
@@ -17,34 +45,83 @@ export class ProfilesService {
     data: { bio?: string; avatarUrl?: string },
   ) {
     try {
-      return await this.prisma.profile.update({
+      const updatedProfile = await this.prisma.profile.update({
         where: { userId },
         data,
       });
+      this.logger.log(`Profile updated for user ID: ${userId}`);
+      return updatedProfile;
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Profile not found');
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          this.logger.warn(`Profile not found for update: ${userId}`);
+          throw new NotFoundException('Profile not found');
+        }
+        if (error.code === 'P2002') {
+          this.logger.warn(`Duplicate profile update attempt: ${userId}`);
+          throw new ConflictException(
+            'Profile already exists with these details',
+          );
+        }
       }
-      throw error;
+
+      this.logger.error(
+        `Failed to update profile for user ID: ${userId}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to update profile');
     }
   }
 
   async createProfile(createProfileDto: CreateProfileDto) {
-    // Create both user and profile in a transaction
-    return this.prisma.$transaction(async (prisma) => {
-      const user = await prisma.user.create({
-        data: {
-          id: createProfileDto.userId,
-          email: createProfileDto.email,
-        },
-      });
+    try {
+      return await this.prisma.$transaction(async (prisma) => {
+        try {
+          const user = await prisma.user.create({
+            data: {
+              id: createProfileDto.userId,
+              email: createProfileDto.email,
+            },
+          });
+          this.logger.log(`User created with ID: ${user.id}`);
 
-      return prisma.profile.create({
-        data: {
-          user: { connect: { id: user.id } },
-          name: createProfileDto.email.split('@')[0],
-        },
+          const profile = await prisma.profile.create({
+            data: {
+              user: { connect: { id: user.id } },
+              name: createProfileDto.email.split('@')[0],
+            },
+          });
+          this.logger.log(`Profile created for user ID: ${user.id}`);
+
+          return profile;
+        } catch (error) {
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2002') {
+              this.logger.warn(
+                `User or profile already exists: ${createProfileDto.userId}`,
+              );
+              throw new ConflictException('User or profile already exists');
+            }
+          }
+          this.logger.error(
+            'Failed to create user or profile in transaction',
+            error.stack,
+          );
+          throw new InternalServerErrorException('Failed to create profile');
+        }
       });
-    });
+    } catch (error) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      this.logger.error(
+        'Transaction failed during profile creation',
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to create profile');
+    }
   }
 }
