@@ -46,6 +46,31 @@ services:
     depends_on:
       - postgres
 
+  # Cache & Message Broker
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Redis Web UI
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    restart: always
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
+
   # Application Services
   auth-service:
     build:

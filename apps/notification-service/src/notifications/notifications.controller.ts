@@ -34,6 +34,7 @@ export class NotificationsController {
         userId: postCreatedEvent.data.userId,
         postId: postCreatedEvent.data.postId,
         content: postCreatedEvent.data.content,
+        createdAt: postCreatedEvent.data.createdAt,
       });
       this.logger.log(
         `Notification created for post ${postCreatedEvent.data.postId}`,
@@ -74,5 +75,20 @@ export class NotificationsController {
       data: 'ok',
       message: 'Notification service is healthy',
     };
+  }
+
+  @Get('test-queue')
+  async testQueue() {
+    console.log('test-queue');
+    await this.notificationsService.enqueueNotification({
+      userEmail: 'omkardongre5@gmail.com',
+      type: 'USER_FOLLOWED',
+      payload: {
+        followerId: 'test-follower',
+        followerName: 'Test User',
+        followedAt: new Date().toISOString(),
+      },
+    });
+    return { success: true };
   }
 }

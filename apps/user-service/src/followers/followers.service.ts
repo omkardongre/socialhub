@@ -33,10 +33,26 @@ export class FollowersService {
         data: { followerId, followedId },
       });
 
+      const followerProfile = await this.prisma.profile.findUnique({
+        where: { userId: followerId },
+        select: {
+          name: true,
+        },
+      });
+
+      const followedUser = await this.prisma.user.findUnique({
+        where: { id: followedId },
+        select: {
+          email: true,
+        },
+      });
+
       try {
         const followEvent = createUserFollowedEvent({
           followerId,
           followedId,
+          followerName: followerProfile?.name || '',
+          followedEmail: followedUser?.email || '',
           followedAt: new Date().toISOString(),
         });
         this.rabbitmqClient.emit(followEvent.event, followEvent);
