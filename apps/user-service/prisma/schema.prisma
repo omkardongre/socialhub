@@ -8,18 +8,18 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  profile   Profile?
-  followers Follower[] @relation("Following")
-  following Follower[] @relation("Followers")
-  createdAt DateTime @default(now())
+  id          String     @id @default(uuid())
+  email       String     @unique
+  profile     Profile?
+  followers   Follower[] @relation("UserFollowers")
+  following   Follower[] @relation("UserFollowing")
+  createdAt   DateTime   @default(now())
 }
 
 model Profile {
-  id         String  @id @default(uuid())
-  user       User    @relation(fields: [userId], references: [id])
-  userId     String  @unique
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @unique
   name       String?
   bio        String?
   avatarUrl  String?
@@ -28,12 +28,11 @@ model Profile {
 }
 
 model Follower {
-  id           String @id @default(uuid())
-  follower     User   @relation("Following", fields: [followerId], references: [id])
-  followerId   String
-  following    User   @relation("Followers", fields: [followingId], references: [id])
-  followingId  String
-  createdAt    DateTime @default(now())
-
-  @@unique([followerId, followingId])
+  id          String   @id @default(uuid())
+  followed    User     @relation("UserFollowers", fields: [followedId], references: [id])
+  followedId  String
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id])
+  followerId  String
+  createdAt   DateTime @default(now())
+  @@unique([followerId, followedId])
 }

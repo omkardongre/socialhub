@@ -23,24 +23,24 @@ export class FollowersService {
     @Inject('RABBITMQ_SERVICE') private readonly rabbitmqClient: ClientProxy,
   ) {}
 
-  async followUser(followerId: string, followingId: string) {
+  async followUser(followerId: string, followedId: string) {
     try {
-      if (followerId === followingId) {
+      if (followerId === followedId) {
         throw new BadRequestException("Can't follow yourself");
       }
 
       const follow = await this.prisma.follower.create({
-        data: { followerId, followingId },
+        data: { followerId, followedId },
       });
 
       try {
         const followEvent = createUserFollowedEvent({
           followerId,
-          followedId: followingId,
+          followedId,
           followedAt: new Date().toISOString(),
         });
         this.rabbitmqClient.emit(followEvent.event, followEvent);
-        this.logger.log(`User ${followerId} followed user ${followingId}`);
+        this.logger.log(`User ${followerId} followed user ${followedId}`);
       } catch (error) {
         this.logger.error(
           `Failed to emit follow event for user ${followerId}`,
@@ -57,33 +57,31 @@ export class FollowersService {
 
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          this.logger.warn(
-            `Already following: ${followerId} -> ${followingId}`,
-          );
+          this.logger.warn(`Already following: ${followerId} -> ${followedId}`);
           throw new BadRequestException('Already following this user');
         }
         if (error.code === 'P2003') {
           this.logger.warn(
-            `User not found in follow attempt: ${followerId} -> ${followingId}`,
+            `User not found in follow attempt: ${followerId} -> ${followedId}`,
           );
           throw new NotFoundException('One or both users not found');
         }
       }
 
-      this.logger.error(`Failed to follow user ${followingId}`, error.stack);
+      this.logger.error(`Failed to follow user ${followedId}`, error.stack);
       throw new InternalServerErrorException('Failed to follow user');
     }
   }
 
-  async unfollowUser(followerId: string, followingId: string) {
+  async unfollowUser(followerId: string, followedId: string) {
     try {
       const result = await this.prisma.follower.deleteMany({
-        where: { followerId, followingId },
+        where: { followerId, followedId },
       });
 
       if (result.count === 0) {
         this.logger.warn(
-          `No follow relationship found: ${followerId} -> ${followingId}`,
+          `No follow relationship found: ${followerId} -> ${followedId}`,
         );
         throw new NotFoundException('No follow relationship found');
       }
@@ -91,11 +89,11 @@ export class FollowersService {
       try {
         const unfollowEvent = createUserUnfollowedEvent({
           followerId,
-          unfollowedId: followingId,
+          unfollowedId: followedId,
           unfollowedAt: new Date().toISOString(),
         });
         this.rabbitmqClient.emit(unfollowEvent.event, unfollowEvent);
-        this.logger.log(`User ${followerId} unfollowed user ${followingId}`);
+        this.logger.log(`User ${followerId} unfollowed user ${followedId}`);
       } catch (error) {
         this.logger.error(
           `Failed to emit unfollow event for user ${followerId}`,
@@ -110,7 +108,7 @@ export class FollowersService {
         throw error;
       }
 
-      this.logger.error(`Failed to unfollow user ${followingId}`, error.stack);
+      this.logger.error(`Failed to unfollow user ${followedId}`, error.stack);
       throw new InternalServerErrorException('Failed to unfollow user');
     }
   }
@@ -118,7 +116,7 @@ export class FollowersService {
   async getFollowers(userId: string) {
     try {
       const followers = await this.prisma.follower.findMany({
-        where: { followingId: userId },
+        where: { followedId: userId },
         include: { follower: true },
       });
 
@@ -140,7 +138,7 @@ export class FollowersService {
     try {
       const following = await this.prisma.follower.findMany({
         where: { followerId: userId },
-        include: { following: true },
+        include: { follower: true },
       });
 
       if (following.length === 0) {
