@@ -5,6 +5,8 @@ export const USER_FOLLOWED = "user_followed";
 export interface UserFollowedEventData {
   followerId: string;
   followedId: string;
+  followerName: string;
+  followedEmail: string;
   followedAt: string;
 }
 

@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   Logger,
   InternalServerErrorException,
@@ -8,12 +9,21 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationType, EntityType } from '../../prisma/types';
+import { Queue } from 'bull';
+import { NotificationJob } from './jobs/notification-job.interface';
+import { UserFollowedEventData } from '@libs/events/user-followed.event';
+import { PostCreatedEventData } from '@libs/events/post-created.event';
+import { InjectQueue } from '@nestjs/bull';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectQueue('notification-queue')
+    private readonly notificationQueue: Queue,
+  ) {}
 
   async createDefaultPreferences(userId: string): Promise<void> {
     try {
@@ -55,11 +65,7 @@ export class NotificationsService {
     }
   }
 
-  async createPostNotification(postData: {
-    userId: string;
-    postId: string;
-    content: string;
-  }): Promise<void> {
+  async createPostNotification(postData: PostCreatedEventData): Promise<void> {
     try {
       const preferences = await this.prisma.notificationPreference.findUnique({
         where: { userId: postData.userId },
@@ -107,11 +113,26 @@ export class NotificationsService {
     }
   }
 
-  async handleFollowEvent(followData: {
-    followerId: string;
-    followedId: string;
-    followedAt: string;
-  }): Promise<void> {
+  async enqueueNotification(jobData: NotificationJob) {
+    try {
+      if (!jobData.userEmail) {
+        this.logger.warn('Attempted to enqueue notification without email');
+        return;
+      }
+      await this.notificationQueue.add('send-notification', {
+        ...jobData,
+      });
+      this.logger.log(`Enqueued notification for user ${jobData.userEmail}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to enqueue notification: ${error.message}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to enqueue notification');
+    }
+  }
+
+  async handleFollowEvent(followData: UserFollowedEventData) {
     try {
       let preferences = await this.prisma.notificationPreference.findUnique({
         where: { userId: followData.followedId },
@@ -141,7 +162,8 @@ export class NotificationsService {
         return;
       }
 
-      await this.prisma.notification.create({
+      // Create notification in database
+      const notification = await this.prisma.notification.create({
         data: {
           receiverId: followData.followedId,
           senderId: followData.followerId,
@@ -152,9 +174,22 @@ export class NotificationsService {
         },
       });
 
+      // Enqueue email notification
+      await this.enqueueNotification({
+        userEmail: followData.followedEmail,
+        type: 'USER_FOLLOWED',
+        payload: {
+          followerId: followData.followerId,
+          followerName: followData.followerName,
+          followedAt: followData.followedAt,
+        },
+      });
+
       this.logger.log(
-        `Created follow notification for user ${followData.followedId} from ${followData.followerId}`,
+        `Created and enqueued follow notification for user ${followData.followedId} from ${followData.followerId}`,
       );
+
+      return notification;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2003') {
