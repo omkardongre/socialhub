@@ -6,6 +6,9 @@ import {
   Body,
   InternalServerErrorException,
   Get,
+  Param,
+  Put,
+  Query,
 } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { NotificationsService } from './notifications.service';
@@ -15,6 +18,8 @@ import {
   UserFollowedEvent,
   USER_FOLLOWED,
 } from '@libs/events';
+import { GetNotificationsDto } from './dto/get-notifications.dto';
+import { MarkReadDto } from './dto/mark-read.dto';
 
 @Controller('notifications')
 export class NotificationsController {
@@ -90,5 +95,15 @@ export class NotificationsController {
       },
     });
     return { success: true };
+  }
+
+  @Get()
+  async getNotifications(@Query() query: GetNotificationsDto) {
+    return await this.notificationsService.getUserNotifications(query);
+  }
+
+  @Put(':id/read')
+  async markAsRead(@Param('id') id: string, @Body() body: MarkReadDto) {
+    return await this.notificationsService.markAsRead(id, body.isRead);
   }
 }
