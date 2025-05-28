@@ -1,5 +1,4 @@
 import {
-  Inject,
   Injectable,
   Logger,
   InternalServerErrorException,
@@ -8,16 +7,20 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationType, EntityType } from '../../prisma/types';
+import { NotificationType, EntityType } from '@prisma/client';
 import { Queue } from 'bull';
 import { NotificationJob } from './jobs/notification-job.interface';
 import { UserFollowedEventData } from '@libs/events/user-followed.event';
 import { PostCreatedEventData } from '@libs/events/post-created.event';
 import { InjectQueue } from '@nestjs/bull';
+import { GetNotificationsDto } from './dto/get-notifications.dto';
+import { Notification } from '@prisma/client';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
+  private readonly DEFAULT_PAGE_SIZE = 10;
+  private readonly MAX_PAGE_SIZE = 100;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -204,6 +207,80 @@ export class NotificationsService {
         error.stack,
       );
       // Don't rethrow to prevent message requeue
+    }
+  }
+
+  async getUserNotifications(query: GetNotificationsDto) {
+    // 1. Setup pagination
+    const page = query.page || 1;
+    const limit = Math.min(query.limit || 10, 100); // Max 100 items per page
+    const skip = (page - 1) * limit;
+
+    // 2. Build the where clause
+    const where: Prisma.NotificationWhereInput = {};
+
+    if (query.types?.length) {
+      where.type = { in: query.types as NotificationType[] };
+    }
+
+    if (query.isRead !== undefined) {
+      where.isRead = query.isRead === true;
+    }
+
+    if (query.entityTypes?.length) {
+      where.entityType = { in: query.entityTypes as EntityType[] };
+    }
+
+    try {
+      // 3. Fetch notifications and total count
+      const [notifications, total] = await Promise.all([
+        this.prisma.notification.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.notification.count({ where }),
+      ]);
+
+      // 4. Return paginated response
+      return {
+        data: notifications,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to get notifications', error);
+      throw new Error('Failed to fetch notifications');
+    }
+  }
+
+  async markAsRead(id: string, isRead: boolean): Promise<Notification> {
+    try {
+      const notification = await this.prisma.notification.update({
+        where: { id },
+        data: { isRead },
+      });
+
+      this.logger.log(
+        `Notification ${id} marked as ${isRead ? 'read' : 'unread'}`,
+      );
+      return notification;
+    } catch (error) {
+      if (error.code === 'P2025') {
+        // Prisma not found error
+        this.logger.warn(`Notification not found: ${id}`);
+        throw new NotFoundException('Notification not found');
+      }
+      this.logger.error(
+        `Failed to update notification: ${error.message}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to update notification');
     }
   }
 }

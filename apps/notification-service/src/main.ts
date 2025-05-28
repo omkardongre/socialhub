@@ -1,9 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Transport } from '@nestjs/microservices';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true, // Enables automatic transformation
+      transformOptions: {
+        enableImplicitConversion: false, // Enables type conversion
+      },
+    }),
+  );
 
   app.connectMicroservice({
     transport: Transport.RMQ,
