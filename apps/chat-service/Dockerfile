@@ -14,7 +14,7 @@ RUN npm install
 COPY apps/chat-service/ .
 
 # Generate Prisma client if needed
-RUN if [ -f "prisma/schema.prisma" ]; then npx prisma generate; fi
+RUN npx prisma generate
 
 EXPOSE 3000
 
