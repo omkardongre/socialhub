@@ -6,10 +6,45 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model ChatRoom {
+  id           String           @id @default(uuid())
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  
+  messages     Message[]
+  participants ChatParticipant[]
+}
+
+model ChatParticipant {
+  id          String    @id @default(uuid())
+  room        ChatRoom  @relation(fields: [roomId], references: [id])
+  roomId      String
+  userId      String    // Reference to user from user-service
+  lastSeen    DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id        String    @id @default(uuid())
+  room      ChatRoom  @relation(fields: [roomId], references: [id])
+  roomId    String
+  senderId  String    // Reference to user from user-service
+  content   String
+  isRead    Boolean   @default(false)
+  mediaUrl  String?   // Optional reference to media files
+  createdAt DateTime  @default(now())
+
+  @@index([roomId])
+  @@index([senderId])
 }

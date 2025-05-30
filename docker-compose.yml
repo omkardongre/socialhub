@@ -51,7 +51,7 @@ services:
     image: redis:7
     container_name: redis
     ports:
-      - '6379:6379'
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -69,7 +69,6 @@ services:
       - "8081:8081"
     depends_on:
       - redis
-
 
   # Application Services
   auth-service:
@@ -108,8 +107,6 @@ services:
       - "3003:3000"
     env_file:
       - ./apps/post-service/.env
-    environment:
-      - DATABASE_URL=postgresql://admin:admin123@postgres:5432/post_db?schema=public
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -122,8 +119,8 @@ services:
       dockerfile: ./apps/media-service/Dockerfile
     ports:
       - "3004:3000"
-    environment:
-      - DATABASE_URL=postgresql://media_user:media_pass@postgres:5432/media_db?schema=public
+    env_file:
+      - ./apps/media-service/.env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -138,8 +135,6 @@ services:
       - "3005:3000"
     env_file:
       - ./apps/notification-service/.env
-    environment:
-      - DATABASE_URL=postgresql://admin:admin123@postgres:5432/notification_db?schema=public
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -152,8 +147,8 @@ services:
       dockerfile: ./apps/chat-service/Dockerfile
     ports:
       - "3006:3000"
-    environment:
-      - DATABASE_URL=postgresql://chat_user:chat_pass@postgres:5432/chat_db?schema=public
+    env_file:
+      - ./apps/chat-service/.env
     depends_on:
       rabbitmq:
         condition: service_healthy
