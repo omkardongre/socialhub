@@ -13,8 +13,8 @@ RUN npm install
 # Copy the rest of the application
 COPY apps/auth-service/ .
 
-# Generate Prisma client if needed
-RUN if [ -f "prisma/schema.prisma" ]; then npx prisma generate; fi
+# Generate Prisma client
+RUN npx prisma generate
 
 # Build the application
 RUN npm run build

@@ -16,12 +16,12 @@ COPY tsconfig.json ./
 # Copy the rest of the application
 COPY apps/user-service ./apps/user-service
 
-# Generate Prisma client if needed
-RUN if [ -f "apps/user-service/prisma/schema.prisma" ]; then npx prisma generate --schema=apps/user-service/prisma/schema.prisma; fi
-
 # Install dependencies (run from service directory)
 WORKDIR /app/apps/user-service
 RUN npm install
+
+# Generate Prisma client
+RUN npx prisma generate
 
 # Build the application (run from service directory)
 RUN npm run build

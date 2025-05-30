@@ -16,12 +16,15 @@ COPY tsconfig.json ./
 # Copy the rest of the application
 COPY apps/notification-service ./apps/notification-service
 
-# Generate Prisma client if needed
-RUN if [ -f "apps/notification-service/prisma/schema.prisma" ]; then npx prisma generate --schema=apps/notification-service/prisma/schema.prisma; fi
 
 # Install dependencies (run from service directory)
 WORKDIR /app/apps/notification-service
 RUN npm install
+
+# Generate Prisma client
+RUN npx prisma generate
+
+
 
 # Build the application (run from service directory)
 RUN npm run build

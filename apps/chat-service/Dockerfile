@@ -13,9 +13,12 @@ RUN npm install
 # Copy the rest of the application
 COPY apps/chat-service/ .
 
-# Generate Prisma client if needed
+# Generate Prisma client
 RUN npx prisma generate
+
+# Build the application
+RUN npm run build
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "start:prod"]
