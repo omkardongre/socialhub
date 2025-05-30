@@ -13,6 +13,6 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     }),
   ],
   providers: [JwtStrategy, JwtAuthGuard],
-  exports: [JwtAuthGuard, PassportModule, JwtModule],
+  exports: [JwtAuthGuard],
 })
 export class AuthModule {}

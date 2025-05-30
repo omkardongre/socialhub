@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Body() createPostDto: CreatePostDto) {
     const post = await this.postsService.create(createPostDto);
@@ -29,6 +30,7 @@ export class PostsController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('user/:id')
   async findByUser(@Param('id') userId: string) {
     const posts = await this.postsService.findByUser(userId);

@@ -9,10 +9,10 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
+      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '10d' },
     }),
   ],
   providers: [JwtStrategy, JwtAuthGuard],
-  exports: [JwtAuthGuard, PassportModule, JwtModule],
+  exports: [JwtAuthGuard],
 })
 export class AuthModule {}
