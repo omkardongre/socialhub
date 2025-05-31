@@ -6,46 +6,165 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
-import { Socket, Server } from 'socket.io';
+import { Socket as BaseSocket, Server } from 'socket.io';
 import {
   Logger,
-  UsePipes,
-  ValidationPipe,
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { MessagesService } from '../services/chat.service';
+import { ChatService } from '../chat.service';
 import { CreateMessageDto } from '../dto/create-message.dto';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { verifyWsClientToken } from '../../auth/ws-auth.util';
+
+// Extend the Socket interface to include our custom properties
+interface CustomSocket extends BaseSocket {
+  user?: {
+    id: string;
+    email?: string;
+    [key: string]: any;
+  };
+}
+
+// Use our custom socket type
+type Socket = CustomSocket;
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: process.env.FRONTEND_URL || '*',
     methods: ['GET', 'POST'],
     credentials: true,
   },
+  namespace: 'chat',
 })
-@UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(ChatGateway.name);
+  private readonly activeRooms = new Map<string, Set<string>>();
 
-  constructor(private readonly messagesService: MessagesService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     try {
-      this.logger.log(`Client connected: ${client.id}`);
+      // Get token from query params
+      const token = client.handshake.query?.token as string;
+      const roomId = client.handshake.query?.roomId as string;
+
+      if (!token) {
+        throw new WsException('No token provided');
+      }
+
+      // Verify the token and get user payload
+      const payload = await verifyWsClientToken(
+        client,
+        this.jwtService,
+        this.configService,
+      );
+
+      client.user = {
+        id: payload.sub,
+        email: payload.email,
+        ...payload,
+      };
+
+      if (!client.user) {
+        throw new WsException('User not authenticated');
+      }
+
+      this.logger.log(`User ${client.user.id} connected via socket.`);
+
+      if (!roomId) {
+        throw new WsException('Missing room ID');
+      }
+
+      // Join the room in Socket.IO
+      await client.join(roomId);
+
+      // Track in database
+      await this.chatService.joinRoom(roomId, client.user.id);
+
+      // Track active users in memory
+      if (!this.activeRooms.has(roomId)) {
+        this.activeRooms.set(roomId, new Set());
+      }
+      this.activeRooms.get(roomId)?.add(client.user.id);
+
+      // Mark messages as read for this user
+      await this.chatService.markMessagesAsRead(roomId, client.user.id);
+
+      // Get all participants to send presence info
+      const participants = await this.chatService.getRoomParticipants(roomId);
+
+      // Notify room about new user with participant list
+      this.server.to(roomId).emit('user_joined', {
+        userId: client.user.id,
+        roomId,
+        participants: participants.map((p) => ({
+          userId: p.userId,
+          lastSeen: p.lastSeen,
+          isOnline: this.activeRooms.get(roomId)?.has(p.userId) || false,
+        })),
+      });
+
+      this.logger.log(
+        `Client ${client.id} (User: ${client.user.id}) connected to room ${roomId}`,
+      );
     } catch (error) {
-      this.logger.error(`Error in handleConnection: ${error}`);
-      client.disconnect(true);
+      this.logger.error(`Connection error: ${error.message}`, error.stack);
+      client.emit('connection_error', {
+        message: error.message || 'Connection failed',
+      });
+      client.disconnect();
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     try {
-      this.logger.log(`Client disconnected: ${client.id}`);
+      const roomId = client.handshake.query?.roomId as string;
+      const userId = client.user?.id;
+
+      if (!userId || !roomId) {
+        this.logger.warn(
+          `Disconnect - Missing user or room ID for client: ${client.id}`,
+        );
+        return;
+      }
+
+      // Update last seen in database
+      await this.chatService.leaveRoom(roomId, userId);
+
+      // Update in-memory tracking
+      const roomUsers = this.activeRooms.get(roomId);
+      if (roomUsers) {
+        roomUsers.delete(userId);
+        if (roomUsers.size === 0) {
+          this.activeRooms.delete(roomId);
+        } else {
+          // Notify room about user leaving
+          this.server.to(roomId).emit('user_left', {
+            userId,
+            roomId,
+            timestamp: new Date().toISOString(),
+            participants: Array.from(roomUsers),
+          });
+        }
+      }
+
+      this.logger.log(
+        `Client ${client.id} (User: ${userId}) disconnected from room ${roomId}`,
+      );
     } catch (error) {
-      this.logger.error(`Error in handleDisconnect: ${error}`);
+      this.logger.error(
+        `Error in handleDisconnect: ${error.message}`,
+        error.stack,
+      );
     }
   }
 
@@ -59,13 +178,40 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         throw new BadRequestException('Room ID is required');
       }
 
-      await client.join(data.roomId);
-      this.logger.log(`Client ${client.id} joined room ${data.roomId}`);
+      if (!client.user) {
+        throw new BadRequestException('User not authenticated');
+      }
 
+      // Join the room in database
+      await this.chatService.joinRoom(data.roomId, client.user.id);
+
+      // Join the room in Socket.IO
+      await client.join(data.roomId);
+
+      // Update in-memory tracking
+      if (!this.activeRooms.has(data.roomId)) {
+        this.activeRooms.set(data.roomId, new Set());
+      }
+      this.activeRooms.get(data.roomId)?.add(client.user.id);
+
+      // Mark messages as read
+      await this.chatService.markMessagesAsRead(data.roomId, client.user.id);
+
+      // Get all participants
+      const participants = await this.chatService.getRoomParticipants(
+        data.roomId,
+      );
+
+      // Notify room
       this.server.to(data.roomId).emit('user_joined', {
-        userId: client.id,
+        userId: client.user.id,
         roomId: data.roomId,
         timestamp: new Date().toISOString(),
+        participants: participants.map((p) => ({
+          userId: p.userId,
+          lastSeen: p.lastSeen,
+          isOnline: this.activeRooms.get(data.roomId)?.has(p.userId) || false,
+        })),
       });
 
       return {
@@ -91,44 +237,72 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      if (!client.rooms.has(createMessageDto.roomId)) {
+      if (!client.user) {
+        throw new BadRequestException('User not authenticated');
+      }
+
+      const userId = client.user.id;
+      const { roomId, content } = createMessageDto;
+
+      if (!content?.trim()) {
+        throw new BadRequestException('Message content cannot be empty');
+      }
+
+      // Verify user is in the room they're trying to message
+      if (!client.rooms.has(roomId)) {
         throw new BadRequestException(
           'You must join the room before sending messages',
         );
       }
 
-      const message = await this.messagesService.createMessage({
-        roomId: createMessageDto.roomId,
-        senderId: createMessageDto.senderId,
-        content: createMessageDto.content,
+      const roomUsers = this.activeRooms.get(roomId);
+      if (!roomUsers?.has(userId)) {
+        throw new BadRequestException('Not a member of this room');
+      }
+
+      // Save message to database
+      const message = await this.chatService.createMessage({
+        ...createMessageDto,
+        senderId: userId,
       });
 
-      this.server.to(createMessageDto.roomId).emit('receive_message', {
+      // Broadcast to all clients in the room including sender
+      const messageResponse = {
         id: message.id,
         roomId: message.roomId,
         senderId: message.senderId,
         content: message.content,
+        mediaUrl: message.mediaUrl,
         createdAt: message.createdAt.toISOString(),
-      });
+      };
+
+      this.server.to(roomId).emit('receive_message', messageResponse);
+      this.logger.debug(`Message ${message.id} broadcasted to room ${roomId}`);
 
       return {
         success: true,
         message: 'Message sent successfully',
-        data: {
-          messageId: message.id,
-          timestamp: message.createdAt,
-        },
+        data: messageResponse,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage =
-        error.response?.message || error.message || 'Failed to send message';
-      this.logger.error(`Error sending message: ${errorMessage}`, error.stack);
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : '';
+      const errorCode = error instanceof BadRequestException ? 400 : 500;
 
-      if (error instanceof BadRequestException) {
+      this.logger.error(`Error handling message: ${errorMessage}`, errorStack);
+
+      // Send error back to the client
+      client.emit('message_error', {
+        error: errorMessage,
+        code: errorCode,
+      });
+
+      // Re-throw for NestJS to handle
+      if (error instanceof Error) {
         throw error;
       }
-
-      throw new InternalServerErrorException('Failed to send message');
+      throw new Error('An unknown error occurred');
     }
   }
 
@@ -142,18 +316,39 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         throw new BadRequestException('Room ID is required');
       }
 
-      await client.leave(data.roomId);
-      this.logger.log(`Client ${client.id} left room ${data.roomId}`);
+      if (!client.user) {
+        throw new BadRequestException('User not authenticated');
+      }
 
-      this.server.to(data.roomId).emit('user_left', {
-        userId: client.id,
-        roomId: data.roomId,
+      const userId = client.user.id;
+      const roomId = data.roomId;
+
+      // Update last seen in database
+      await this.chatService.leaveRoom(roomId, userId);
+
+      // Leave the room in Socket.IO
+      await client.leave(roomId);
+
+      // Update in-memory tracking
+      const roomUsers = this.activeRooms.get(roomId);
+      if (roomUsers) {
+        roomUsers.delete(userId);
+        if (roomUsers.size === 0) {
+          this.activeRooms.delete(roomId);
+        }
+      }
+
+      // Notify room
+      this.server.to(roomId).emit('user_left', {
+        userId,
+        roomId,
         timestamp: new Date().toISOString(),
+        participants: Array.from(roomUsers || []),
       });
 
       return {
         success: true,
-        message: `Left room ${data.roomId}`,
+        message: `Left room ${roomId}`,
       };
     } catch (error) {
       const errorMessage =
