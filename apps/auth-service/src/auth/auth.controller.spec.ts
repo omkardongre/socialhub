@@ -6,17 +6,22 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { NotFoundException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: AuthService;
-  let jwtService: JwtService;
 
   const mockAuthService = {
     signup: jest.fn(),
     login: jest.fn(),
+    verifyEmail: jest.fn().mockResolvedValue({
+      success: true,
+      message: 'Email verified successfully',
+    }),
+    refreshTokens: jest.fn().mockResolvedValue({
+      access_token: 'access',
+      refresh_token: 'refresh',
+    }),
   };
 
   const mockJwtService = {
@@ -51,8 +56,6 @@ describe('AuthController', () => {
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
-    authService = module.get<AuthService>(AuthService);
-    jwtService = module.get<JwtService>(JwtService);
   });
 
   afterEach(() => {
@@ -72,7 +75,7 @@ describe('AuthController', () => {
 
       const result = await controller.signup(dto);
 
-      expect(authService.signup).toHaveBeenCalledWith(dto);
+      expect(mockAuthService.signup).toHaveBeenCalledWith(dto);
       expect(result).toEqual({
         success: true,
         data: { userId: '1' },
@@ -94,7 +97,7 @@ describe('AuthController', () => {
 
       const result = await controller.login(dto);
 
-      expect(authService.login).toHaveBeenCalledWith(dto);
+      expect(mockAuthService.login).toHaveBeenCalledWith(dto);
       expect(result).toEqual({
         success: true,
         data: {
@@ -120,62 +123,63 @@ describe('AuthController', () => {
   describe('refreshToken', () => {
     it('should return new access token for valid refresh token', async () => {
       const validToken = 'valid.refresh.token';
-      const mockSession = {
-        refreshToken: await bcrypt.hash(validToken, 10),
+      const mockResult = {
+        access_token: 'new.access.token',
+        user: { id: '1', email: 'test@example.com' },
       };
-      const mockUser = { id: '1', email: 'test@example.com' };
 
-      // Mock JWT verification
-      mockJwtService.verify.mockReturnValue({ sub: '1' });
-      // Mock session lookup
-      mockPrisma.session.findMany.mockResolvedValue([mockSession]);
-      // Mock user lookup
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      // Mock token signing
-      mockJwtService.signAsync.mockResolvedValue('new.access.token');
+      // Mock the authService.refreshTokens method
+      mockAuthService.refreshTokens.mockResolvedValue(mockResult);
 
       const result = await controller.refreshToken({
         refresh_token: validToken,
       });
 
+      expect(mockAuthService.refreshTokens).toHaveBeenCalledWith(validToken);
       expect(result).toEqual({
         success: true,
-        data: { access_token: 'new.access.token' },
+        data: {
+          access_token: 'new.access.token',
+          user: { id: '1', email: 'test@example.com' },
+        },
         message: 'Tokens refreshed successfully',
       });
+    });
+
+    it('should throw BadRequestException if no refresh token provided', async () => {
+      await expect(
+        controller.refreshToken({ refresh_token: '' }),
+      ).rejects.toThrow(new BadRequestException('Refresh token is required'));
     });
   });
 
   describe('verifyEmail', () => {
     it('should verify email with valid token', async () => {
       const validToken = 'valid-token';
-      const mockUser = { id: '1', verificationToken: validToken };
 
-      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
-      mockPrisma.user.update.mockResolvedValue({
-        ...mockUser,
-        isVerified: true,
-        verificationToken: null,
+      mockAuthService.verifyEmail.mockResolvedValueOnce({
+        success: true,
+        message: 'Email verified successfully',
       });
 
       const result = await controller.verifyEmail(validToken);
 
+      expect(mockAuthService.verifyEmail).toHaveBeenCalledWith(validToken);
       expect(result).toEqual({
         success: true,
         message: 'Email verified successfully',
       });
-      expect(mockPrisma.user.update).toHaveBeenCalledWith({
-        where: { id: '1' },
-        data: { isVerified: true, verificationToken: null },
-      });
     });
 
     it('should throw NotFoundException for invalid token', async () => {
-      mockPrisma.user.findFirst.mockResolvedValue(null);
+      mockAuthService.verifyEmail.mockRejectedValueOnce(
+        new NotFoundException('Invalid token'),
+      );
 
       await expect(controller.verifyEmail('invalid-token')).rejects.toThrow(
         NotFoundException,
       );
+      expect(mockAuthService.verifyEmail).toHaveBeenCalledWith('invalid-token');
     });
   });
 });
