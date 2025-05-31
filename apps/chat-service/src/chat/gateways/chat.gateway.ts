@@ -18,7 +18,7 @@ import { ChatService } from '../chat.service';
 import { CreateMessageDto } from '../dto/create-message.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { verifyWsClientToken } from '../../auth/ws-auth.util';
+import { verifyWsClientToken } from '../../ws-auth/ws-auth.util';
 
 // Extend the Socket interface to include our custom properties
 interface CustomSocket extends BaseSocket {
