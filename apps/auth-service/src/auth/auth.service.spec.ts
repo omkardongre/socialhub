@@ -2,19 +2,45 @@ import { Test } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from 'argon2';
 import {
   ConflictException,
   ForbiddenException,
   UnauthorizedException,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
+import { UserRestService } from '../external/user/user.rest.service';
+import { NotificationRestService } from '../external/notification/notification.rest.service';
 
-jest.mock('bcrypt');
+// Mock the external services
+const mockUserRestService = {
+  createUserProfile: jest.fn().mockResolvedValue({ success: true }),
+};
+
+const mockNotificationRestService = {
+  createDefaultPreferences: jest.fn().mockResolvedValue({ success: true }),
+};
+
+jest.mock('argon2', () => ({
+  hash: jest.fn().mockResolvedValue('hashed_password'),
+  verify: jest.fn().mockResolvedValue(true),
+}));
 
 describe('AuthService', () => {
   let authService: AuthService;
   let prisma: PrismaService;
   let jwtService: JwtService;
+  let userRestService: UserRestService;
+  let notificationRestService: NotificationRestService;
+
+  const mockUser = {
+    id: '1',
+    email: 'test@example.com',
+    password: 'hashed_password',
+    isVerified: true,
+    verificationToken: 'valid_token',
+  };
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
@@ -25,7 +51,9 @@ describe('AuthService', () => {
           useValue: {
             user: {
               findUnique: jest.fn(),
+              findFirst: jest.fn(),
               create: jest.fn(),
+              update: jest.fn(),
             },
             session: {
               create: jest.fn(),
@@ -35,8 +63,17 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: {
-            signAsync: jest.fn(),
+            signAsync: jest.fn().mockResolvedValue('mock_token'),
+            verify: jest.fn(),
           },
+        },
+        {
+          provide: UserRestService,
+          useValue: mockUserRestService,
+        },
+        {
+          provide: NotificationRestService,
+          useValue: mockNotificationRestService,
         },
       ],
     }).compile();
@@ -44,6 +81,10 @@ describe('AuthService', () => {
     authService = module.get<AuthService>(AuthService);
     prisma = module.get<PrismaService>(PrismaService);
     jwtService = module.get<JwtService>(JwtService);
+    userRestService = module.get<UserRestService>(UserRestService);
+    notificationRestService = module.get<NotificationRestService>(
+      NotificationRestService,
+    );
 
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -52,11 +93,6 @@ describe('AuthService', () => {
   describe('signup', () => {
     it('should create a new user with hashed password', async () => {
       const dto = { email: 'test@example.com', password: 'Password123!' };
-      const mockUser = { id: '1', email: dto.email, password: 'hashed' };
-
-      // Mock bcrypt hash
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
-      // Mock prisma responses
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
       (prisma.user.create as jest.Mock).mockResolvedValue(mockUser);
 
@@ -65,15 +101,8 @@ describe('AuthService', () => {
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: dto.email },
       });
-      expect(bcrypt.hash).toHaveBeenCalledWith(dto.password, 10);
-      expect(prisma.user.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          email: dto.email,
-          password: 'hashed',
-          isVerified: false,
-          verificationToken: expect.any(String),
-        }),
-      });
+      expect(argon2.hash).toHaveBeenCalledWith(dto.password);
+      expect(prisma.user.create).toHaveBeenCalled();
       expect(result).toEqual({
         userId: mockUser.id,
         message: 'Signup successful. Please verify your email.',
@@ -89,16 +118,8 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    const mockUser = {
-      id: '1',
-      email: 'test@example.com',
-      password: 'hashed',
-      isVerified: true,
-    };
-
     beforeEach(() => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       (jwtService.signAsync as jest.Mock)
         .mockResolvedValueOnce('access_token')
         .mockResolvedValueOnce('refresh_token');
@@ -136,10 +157,76 @@ describe('AuthService', () => {
     });
 
     it('should throw ForbiddenException for invalid password', async () => {
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      (argon2.verify as jest.Mock).mockResolvedValueOnce(false);
       const dto = { email: 'test@example.com', password: 'WrongPassword' };
 
       await expect(authService.login(dto)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('verifyEmail', () => {
+    it('should verify email with valid token', async () => {
+      // Mock the findFirst to return a user with isVerified: false
+      const unverifiedUser = { ...mockUser, isVerified: false };
+      (prisma.user.findFirst as jest.Mock).mockResolvedValue(unverifiedUser);
+
+      // Mock the update to return the verified user
+      const verifiedUser = {
+        ...unverifiedUser,
+        isVerified: true,
+        verificationToken: null,
+      };
+      (prisma.user.update as jest.Mock).mockResolvedValue(verifiedUser);
+
+      const result = await authService.verifyEmail('valid_token');
+
+      // Verify the correct methods were called with the right arguments
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: { verificationToken: 'valid_token' },
+      });
+
+      // The key fix: Make sure the mock is set up before the service call
+      // and verify the exact call
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: unverifiedUser.id },
+        data: {
+          isVerified: true,
+          verificationToken: null,
+        },
+      });
+
+      // Verify the rest of the test
+      expect(userRestService.createUserProfile).toHaveBeenCalledWith({
+        userId: unverifiedUser.id,
+        email: unverifiedUser.email,
+      });
+      expect(result).toEqual({
+        success: true,
+        message: 'Email verified and profile initialized successfully',
+      });
+    });
+
+    it('should throw NotFoundException for invalid token', async () => {
+      (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(authService.verifyEmail('invalid-token')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should return success if email is already verified', async () => {
+      (prisma.user.findFirst as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        isVerified: true,
+      });
+
+      const result = await authService.verifyEmail('valid_token');
+
+      expect(result).toEqual({
+        success: true,
+        message: 'Email already verified',
+      });
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 });

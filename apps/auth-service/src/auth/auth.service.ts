@@ -15,8 +15,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { add } from 'date-fns';
-import { UserRestService } from 'src/external/user/user.rest.service';
-import { NotificationRestService } from 'src/external/notification/notification.rest.service';
+import { UserRestService } from '../external/user/user.rest.service';
+import { NotificationRestService } from '../external/notification/notification.rest.service';
+import { Session, User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -237,5 +238,62 @@ export class AuthService {
         'Failed to complete email verification',
       );
     }
+  }
+
+  async refreshTokens(refreshToken: string) {
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+    } catch {
+      throw new ForbiddenException('Invalid refresh token');
+    }
+
+    const sessions = await this.prisma.session.findMany({
+      where: {
+        userId: payload.sub,
+        expiresAt: { gte: new Date() },
+      },
+    });
+
+    const validSession = await this.findValidSession(sessions, refreshToken);
+    if (!validSession) {
+      throw new ForbiddenException('Invalid refresh token');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const accessToken = await this.generateAccessToken(user);
+
+    return {
+      access_token: accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+      },
+    };
+  }
+
+  private async findValidSession(sessions: Session[], refreshToken: string) {
+    for (const session of sessions) {
+      if (await argon2.verify(session.refreshToken, refreshToken)) {
+        return session;
+      }
+    }
+    return null;
+  }
+
+  private async generateAccessToken(user: User) {
+    return this.jwtService.signAsync(
+      { sub: user.id, email: user.email },
+      { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
+    );
   }
 }

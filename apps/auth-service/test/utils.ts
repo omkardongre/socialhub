@@ -1,22 +1,20 @@
-// apps/auth-service/test/utils.ts
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
-const SALT_ROUNDS = 10;
 
 export async function resetTestDB() {
   await prisma.session.deleteMany();
   await prisma.user.deleteMany();
 }
 
-export async function createTestUser() {
-  const hashedPassword = await bcrypt.hash('testpassword', SALT_ROUNDS);
+export async function createTestUser(isVerified?: boolean) {
+  const hashedPassword = await argon2.hash('testpassword');
   return prisma.user.create({
     data: {
       email: 'test@example.com',
       password: hashedPassword,
-      isVerified: true,
+      isVerified: isVerified,
       verificationToken: null,
     },
   });

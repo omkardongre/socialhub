@@ -7,8 +7,8 @@ import {
   UseGuards,
   ForbiddenException,
   Query,
-  NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
@@ -89,45 +89,18 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Tokens refreshed' })
   @ApiResponse({ status: 403, description: 'Invalid refresh token' })
   async refreshToken(@Body() body: { refresh_token: string }) {
+    if (!body.refresh_token) {
+      throw new BadRequestException('Refresh token is required');
+    }
     const { refresh_token } = body;
-    let payload: any;
-    try {
-      payload = this.jwtService.verify(refresh_token, {
-        secret: process.env.JWT_REFRESH_SECRET,
-      });
-    } catch {
-      throw new ForbiddenException('Invalid refresh token');
-    }
-    // Find all sessions for this user
-    const sessions: Session[] = await this.prisma.session.findMany({
-      where: {
-        userId: payload.sub,
-        expiresAt: { gte: new Date() }, // only non-expired
-      },
-    });
-    // Find a session with a matching refresh token
-    let validSession;
-    for (const session of sessions) {
-      if (await bcrypt.compare(refresh_token, session.refreshToken)) {
-        validSession = session;
-        break;
-      }
-    }
-    if (!validSession) {
-      throw new ForbiddenException('Invalid refresh token');
-    }
-    // Issue new access token
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-    });
-    if (!user) throw new UnauthorizedException('User not found');
-    const newAccessToken = await this.jwtService.signAsync(
-      { sub: user.id, email: user.email },
-      { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
-    );
+    const result = await this.authService.refreshTokens(refresh_token);
+
     return {
       success: true,
-      data: { access_token: newAccessToken },
+      data: {
+        access_token: result.access_token,
+        user: result.user,
+      },
       message: 'Tokens refreshed successfully',
     };
   }
