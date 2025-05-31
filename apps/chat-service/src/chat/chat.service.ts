@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 
@@ -10,11 +16,26 @@ export class ChatService {
 
   async createMessage(createMessageDto: CreateMessageDto) {
     try {
-      await this.prisma.chatRoom.upsert({
+      // Verify room exists
+      const room = await this.prisma.chatRoom.findUnique({
         where: { id: createMessageDto.roomId },
-        create: { id: createMessageDto.roomId },
-        update: {},
       });
+
+      if (!room) {
+        throw new NotFoundException('Chat room not found');
+      }
+
+      // Verify user is a participant
+      const isParticipant = await this.prisma.chatParticipant.findFirst({
+        where: {
+          roomId: createMessageDto.roomId,
+          userId: createMessageDto.senderId,
+        },
+      });
+
+      if (!isParticipant) {
+        throw new ForbiddenException('You are not a participant in this chat');
+      }
 
       this.logger.log(
         `Saving message in room ${createMessageDto.roomId} from user ${createMessageDto.senderId}`,
@@ -37,7 +58,14 @@ export class ChatService {
         roomId: createMessageDto.roomId,
         senderId: createMessageDto.senderId,
       });
-      throw new Error('Failed to save message');
+
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to save message');
     }
   }
 
@@ -66,7 +94,7 @@ export class ChatService {
       });
     } catch (error) {
       this.logger.error(`Error joining room: ${error.message}`, error.stack);
-      throw new Error('Failed to join room');
+      throw new BadRequestException('Failed to join room');
     }
   }
 
@@ -97,5 +125,51 @@ export class ChatService {
       },
       data: { isRead: true },
     });
+  }
+
+  async getRoomMessages(roomId: string, userId: string) {
+    try {
+      // Verify user has access to this room
+      const hasAccess = await this.prisma.chatParticipant.findFirst({
+        where: { roomId, userId },
+      });
+
+      if (!hasAccess) {
+        throw new ForbiddenException('Access to chat room denied');
+      }
+
+      return await this.prisma.message.findMany({
+        where: { roomId },
+        orderBy: { createdAt: 'asc' },
+      });
+    } catch (error) {
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to fetch messages');
+    }
+  }
+
+  async getUserRooms(userId: string) {
+    try {
+      return await this.prisma.chatRoom.findMany({
+        where: {
+          participants: { some: { userId } },
+        },
+        include: {
+          participants: {
+            where: { userId: { not: userId } },
+            select: { userId: true, lastSeen: true },
+          },
+          messages: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to fetch user rooms', error);
+      throw new BadRequestException('Failed to fetch user chat rooms');
+    }
   }
 }
