@@ -5,6 +5,8 @@ import {
   Get,
   Param,
   UseGuards,
+  NotFoundException,
+  HttpException,
 } from '@nestjs/common';
 import { FollowersService } from './followers.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -52,12 +54,22 @@ export class FollowersController {
   @ApiOperation({ summary: 'Unfollow a user' })
   @ApiResponse({ status: 200, description: 'User unfollowed' })
   async unfollow(@CurrentUser() user: JwtPayload, @Param('id') userId: string) {
-    const result = await this.followersService.unfollowUser(user.sub, userId);
-    return {
-      success: true,
-      data: result,
-      message: 'Successfully unfollowed user',
-    };
+    try {
+      const result = await this.followersService.unfollowUser(user.sub, userId);
+      return {
+        success: true,
+        data: result,
+        message: 'Successfully unfollowed user',
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new HttpException(
+          { success: false, message: 'You are not following this user' },
+          404,
+        );
+      }
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard)

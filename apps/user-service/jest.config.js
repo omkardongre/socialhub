@@ -8,4 +8,8 @@ module.exports = {
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
+  moduleNameMapper: {
+    '^@libs/events$': '<rootDir>/../../../libs/events',
+    '^@libs/events/(.*)$': '<rootDir>/../../../libs/events/$1',
+  },
 };

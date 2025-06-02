@@ -3,8 +3,7 @@ import { FollowersService } from './followers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException } from '@nestjs/common';
 
-// Mock PrismaService directly
-jest.mock('../prisma/prisma.service');
+// NOTE: Removed jest.mock('../prisma/prisma.service') to allow manual deep mocking below.
 
 describe('FollowersService', () => {
   let service: FollowersService;
@@ -35,22 +34,30 @@ describe('FollowersService', () => {
   const mockFollowingList = [
     {
       ...mockFollowerRelation,
-      id: 'f3',
-      followingId: 'user5',
-      following: { id: 'user5', name: 'Following 5' },
-    }, // Include mock following data
+      id: 'f1',
+      followerId: 'user3',
+      followingId: 'user2',
+      follower: { id: 'user3', name: 'Follower 3' },
+    },
     {
       ...mockFollowerRelation,
-      id: 'f4',
-      followingId: 'user6',
-      following: { id: 'user6', name: 'Following 6' },
-    }, // Include mock following data
+      id: 'f2',
+      followerId: 'user4',
+      followingId: 'user2',
+      follower: { id: 'user4', name: 'Follower 4' },
+    },
   ];
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      // Include the mocked PrismaService
-      providers: [FollowersService, PrismaService],
+      providers: [
+        FollowersService,
+        PrismaService,
+        {
+          provide: 'RABBITMQ_SERVICE',
+          useValue: { emit: jest.fn(), send: jest.fn() },
+        },
+      ],
     }).compile();
 
     service = module.get<FollowersService>(FollowersService);
@@ -58,18 +65,24 @@ describe('FollowersService', () => {
     prisma = module.get(PrismaService);
 
     // --- Ensure the nested structure exists in the mock ---
-    if (!prisma.follower) {
-      (prisma as any).follower = {};
-    }
-    if (!prisma.follower.create) {
-      (prisma.follower as any).create = jest.fn();
-    }
-    if (!prisma.follower.deleteMany) {
-      (prisma.follower as any).deleteMany = jest.fn();
-    }
-    if (!prisma.follower.findMany) {
-      (prisma.follower as any).findMany = jest.fn();
-    }
+    // Always create follower as a plain object with all methods as jest mocks
+    (prisma as any).follower = {
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+      findMany: jest.fn(),
+    };
+    // Always create user as a plain object with findUnique as a jest mock
+    (prisma as any).user = {
+      findUnique: jest.fn().mockResolvedValue({ id: 'user2', name: 'User 2' }),
+    };
+    // Always create profile as a plain object with findUnique as a jest mock
+    (prisma as any).profile = {
+      findUnique: jest.fn().mockResolvedValue({
+        id: 'profile1',
+        userId: 'user2',
+        bio: 'Test bio',
+      }),
+    };
     // --- End structure setup ---
 
     // Reset mocks before each test
@@ -108,7 +121,7 @@ describe('FollowersService', () => {
       expect(result).toEqual(mockFollowerRelation);
       expect(prisma.follower.create).toHaveBeenCalledTimes(1);
       expect(prisma.follower.create).toHaveBeenCalledWith({
-        data: { followerId, followingId },
+        data: { followerId, followedId: followingId },
       });
     });
 
@@ -134,7 +147,7 @@ describe('FollowersService', () => {
       expect(result).toEqual({ count: 1 }); // Prisma deleteMany returns count
       expect(prisma.follower.deleteMany).toHaveBeenCalledTimes(1);
       expect(prisma.follower.deleteMany).toHaveBeenCalledWith({
-        where: { followerId, followingId },
+        where: { followerId, followedId: followingId },
       });
     });
   });
@@ -148,7 +161,7 @@ describe('FollowersService', () => {
       expect(result).toEqual(mockFollowerList);
       expect(prisma.follower.findMany).toHaveBeenCalledTimes(1);
       expect(prisma.follower.findMany).toHaveBeenCalledWith({
-        where: { followingId: userId },
+        where: { followedId: userId },
         include: { follower: true },
       });
     });
@@ -164,7 +177,7 @@ describe('FollowersService', () => {
       expect(prisma.follower.findMany).toHaveBeenCalledTimes(1);
       expect(prisma.follower.findMany).toHaveBeenCalledWith({
         where: { followerId: userId },
-        include: { following: true },
+        include: { follower: true },
       });
     });
   });

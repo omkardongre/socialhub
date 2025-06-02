@@ -59,11 +59,12 @@ describe('ProfilesService', () => {
       });
     });
 
-    it('should return null when profile not found', async () => {
+    it('should throw NotFoundException when profile not found', async () => {
       // Set mock implementation for this specific test
       (prisma.profile.findUnique as jest.Mock).mockResolvedValue(null);
-      const result = await service.getProfileByUserId('invalid-id');
-      expect(result).toBeNull();
+      await expect(service.getProfileByUserId('invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -91,11 +92,72 @@ describe('ProfilesService', () => {
       );
     });
 
-    it('should rethrow other errors', async () => {
+    it('should throw InternalServerErrorException for unknown errors', async () => {
       const testError = new Error('Database error');
       // Set mock implementation for this specific test
       (prisma.profile.update as jest.Mock).mockRejectedValue(testError);
-      await expect(service.updateProfile('123', {})).rejects.toThrow(testError);
+      await expect(service.updateProfile('123', {})).rejects.toThrowError(
+        expect.objectContaining({
+          message: 'Failed to update profile',
+          name: 'InternalServerErrorException',
+        }),
+      );
+    });
+  });
+
+  describe('createProfile', () => {
+    const mockCreateProfileDto = {
+      userId: '123',
+      email: 'test@example.com',
+    };
+    beforeEach(() => {
+      // Mock $transaction for each test
+      (prisma as any).$transaction = jest.fn();
+    });
+
+    it('should create a profile successfully', async () => {
+      const mockUser = {
+        id: mockCreateProfileDto.userId,
+        email: mockCreateProfileDto.email,
+      };
+      const mockProfile = { id: '1', userId: mockCreateProfileDto.userId };
+      (prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+        // Simulate the transactional callback
+        return cb({
+          user: { create: jest.fn().mockResolvedValue(mockUser) },
+          profile: { create: jest.fn().mockResolvedValue(mockProfile) },
+        });
+      });
+      const result = await service.createProfile(mockCreateProfileDto as any);
+      expect(result).toEqual(mockProfile);
+      expect(prisma.$transaction).toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException if user or profile already exists', async () => {
+      const { ConflictException } = require('@nestjs/common');
+      const Prisma = require('@prisma/client').Prisma;
+      (prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+        // Simulate the transactional callback where profile.create throws
+        return cb({
+          user: { create: jest.fn().mockResolvedValue({ id: mockCreateProfileDto.userId, email: mockCreateProfileDto.email }) },
+          profile: {
+            create: jest.fn().mockImplementation(() => {
+              throw new Prisma.PrismaClientKnownRequestError('Duplicate', { code: 'P2002', clientVersion: '5.0.0' });
+            }),
+          },
+        });
+      });
+      await expect(service.createProfile(mockCreateProfileDto as any)).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw InternalServerErrorException for unknown errors', async () => {
+      const { InternalServerErrorException } = require('@nestjs/common');
+      (prisma.$transaction as jest.Mock).mockImplementation(() => {
+        throw new Error('Unexpected error');
+      });
+      await expect(
+        service.createProfile(mockCreateProfileDto as any),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 });
