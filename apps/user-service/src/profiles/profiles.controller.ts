@@ -20,8 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateProfileDto } from './dto/create-profile.dto';
 
-// TODO: Add JWT guard
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 @ApiTags('Profiles')
 @ApiBearerAuth()
 @Controller('profile')

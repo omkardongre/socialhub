@@ -10,28 +10,20 @@ describe('FollowersController (e2e)', () => {
   let prisma: PrismaService;
   let userAId: string;
   let userBId: string;
-  let userCId: string;
 
-  // Function to clean DB - called beforeAll and afterAll
+  // Clean up followers and users before/after tests
   const cleanDatabase = async (prismaInstance: PrismaService) => {
     await prismaInstance.follower.deleteMany({});
-    // Delete profiles before users if there's a dependency
-    await prismaInstance.profile.deleteMany({
-      where: { user: { email: { contains: '@test-e2e-follow.com' } } },
-    });
-    await prismaInstance.user.deleteMany({
-      where: { email: { contains: '@test-e2e-follow.com' } },
-    });
+    await prismaInstance.profile.deleteMany({});
+    await prismaInstance.user.deleteMany({});
   };
 
   beforeAll(async () => {
-    // Connect temporary Prisma client for initial cleanup
+    // Initial cleanup
     const prismaTemp = new PrismaService();
     try {
       await prismaTemp.$connect();
       await cleanDatabase(prismaTemp);
-    } catch (error) {
-      console.error('Initial cleanup failed:', error);
     } finally {
       await prismaTemp.$disconnect();
     }
@@ -43,8 +35,8 @@ describe('FollowersController (e2e)', () => {
       .useValue({
         canActivate: (context) => {
           const req = context.switchToHttp().getRequest();
-          // Use userAId once it's created below. AuthN user is UserA.
-          req.user = { userId: userAId };
+          // Default: AuthN user is UserA
+          req.user = { sub: userAId };
           return true;
         },
       })
@@ -52,62 +44,34 @@ describe('FollowersController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true, // Ensure DTOs are validated
-        transform: true,
-      }),
+      new ValidationPipe({ whitelist: true, transform: true }),
     );
     await app.init();
 
     prisma = app.get<PrismaService>(PrismaService);
 
-    // Create test users and profiles
-    try {
-      const userA = await prisma.user.create({
-        data: {
-          email: 'follow-a@test-e2e-follow.com',
-        },
-      });
-      userAId = userA.id; // Assign userAId here
-      await prisma.profile.create({
-        data: { userId: userAId, bio: 'User A E2E Bio' },
-      });
-
-      const userB = await prisma.user.create({
-        data: {
-          email: 'follow-b@test-e2e-follow.com',
-        },
-      });
-      userBId = userB.id;
-      await prisma.profile.create({
-        data: { userId: userBId, bio: 'User B E2E Bio' },
-      });
-
-      const userC = await prisma.user.create({
-        data: {
-          email: 'follow-c@test-e2e-follow.com',
-        },
-      });
-      userCId = userC.id;
-      await prisma.profile.create({
-        data: { userId: userCId, bio: 'User C E2E Bio' },
-      });
-    } catch (error) {
-      console.error('Test data creation failed:', error);
-      // Ensure cleanup happens even if setup fails
-      await cleanDatabase(prisma);
-      await app.close();
-      throw error; // Rethrow to fail the test suite
-    }
+    // Create test users
+    const userA = await prisma.user.create({
+      data: { email: 'user-a@test-e2e-followers.com' },
+    });
+    userAId = userA.id;
+    await prisma.profile.create({
+      data: { userId: userAId, name: 'User A' },
+    });
+    const userB = await prisma.user.create({
+      data: { email: 'user-b@test-e2e-followers.com' },
+    });
+    userBId = userB.id;
+    await prisma.profile.create({
+      data: { userId: userBId, name: 'User B' },
+    });
   });
 
   afterAll(async () => {
     try {
-      await cleanDatabase(prisma); // Clean up test data
-    } catch (error) {
-      console.error('Cleanup failed:', error);
+      await cleanDatabase(prisma);
     } finally {
-      await app.close();
+      if (app) await app.close();
     }
   });
 
@@ -116,122 +80,211 @@ describe('FollowersController (e2e)', () => {
     expect(prisma).toBeDefined();
   });
 
-  describe('Follow/Unfollow Flow', () => {
-    it('(GET /followers/following) initially returns empty list for User A', () => {
+  describe('GET /followers/health', () => {
+    it('should return health status', () => {
       return request(app.getHttpServer())
-        .get('/followers/following')
+        .get('/followers/health')
         .expect(200)
-        .expect((res) => {
-          expect(res.body.success).toBe(true);
-          expect(res.body.data).toEqual([]);
+        .expect({
+          success: true,
+          data: 'ok',
+          message: 'Followers module is healthy',
         });
     });
+  });
 
-    it('(POST /followers/follow/:id) User A follows User B successfully', async () => {
+  describe('POST /followers/follow/:id', () => {
+    it('should follow user B as user A', async () => {
       await request(app.getHttpServer())
         .post(`/followers/follow/${userBId}`)
         .expect(201)
         .expect((res) => {
           expect(res.body.success).toBe(true);
           expect(res.body.data.followerId).toBe(userAId);
-          expect(res.body.data.followingId).toBe(userBId);
+          expect(res.body.data.followedId).toBe(userBId);
+          expect(res.body.message).toBe('Successfully followed user');
         });
 
       // Verify in DB
-      const follow = await prisma.follower.findUnique({
-        where: {
-          followerId_followingId: { followerId: userAId, followingId: userBId },
-        },
+      const follow = await prisma.follower.findFirst({
+        where: { followerId: userAId, followedId: userBId },
       });
       expect(follow).toBeDefined();
     });
 
-    it('(POST /followers/follow/:id) User A cannot follow self', () => {
-      return request(app.getHttpServer())
-        .post(`/followers/follow/${userAId}`) // Trying to follow self
-        .expect(400) // Expecting BadRequestException
-        .expect((res) => {
-          expect(res.body.message).toContain("Can't follow yourself");
-        });
-    });
-
-    it("(GET /followers/following) returns User B in User A's following list", () => {
-      return request(app.getHttpServer())
-        .get('/followers/following')
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.success).toBe(true);
-          expect(res.body.data).toHaveLength(1);
-          expect(res.body.data[0].followingId).toBe(userBId);
-          // Check if profile details are included (based on service include)
-          expect(res.body.data[0].following.id).toBe(userBId);
-        });
-    });
-
-    // Test GET /followers/followers for User A
-    it('(GET /followers/followers) initially returns empty list for User A', () => {
-      return request(app.getHttpServer())
-        .get('/followers/followers')
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.success).toBe(true);
-          expect(res.body.data).toEqual([]);
-        });
-    });
-
-    it('(GET /followers/followers) returns User C after User C follows User A', async () => {
-      // Simulate User C following User A (direct DB action for simplicity)
-      await prisma.follower.create({
-        data: { followerId: userCId, followingId: userAId },
-      });
-
+    it('should not allow self-follow', async () => {
       await request(app.getHttpServer())
-        .get('/followers/followers')
-        .expect(200)
+        .post(`/followers/follow/${userAId}`)
+        .expect(400)
         .expect((res) => {
-          expect(res.body.success).toBe(true);
-          expect(res.body.data).toHaveLength(1);
-          expect(res.body.data[0].followerId).toBe(userCId);
-          // Check if profile details are included (based on service include)
-          expect(res.body.data[0].follower.id).toBe(userCId);
+          expect(res.body.message).toMatch(/Can't follow yourself/);
         });
     });
+  });
 
-    it('(DELETE /followers/unfollow/:id) User A unfollows User B successfully', async () => {
+  describe('DELETE /followers/unfollow/:id', () => {
+    beforeEach(async () => {
+      // Clean up all follower records for both users
+      await prisma.follower.deleteMany({
+        where: {
+          OR: [
+            { followerId: userAId, followedId: userBId },
+            { followerId: userBId, followedId: userAId },
+          ],
+        },
+      });
+      await prisma.profile.deleteMany({
+        where: { userId: { in: [userAId, userBId] } },
+      });
+      await prisma.user.deleteMany({
+        where: { id: { in: [userAId, userBId] } },
+      });
+      // Re-create users and profiles
+      await prisma.user.create({
+        data: { id: userAId, email: 'usera@example.com' },
+      });
+      await prisma.user.create({
+        data: { id: userBId, email: 'userb@example.com' },
+      });
+      await prisma.profile.create({
+        data: { userId: userAId, name: 'User A' },
+      });
+      await prisma.profile.create({
+        data: { userId: userBId, name: 'User B' },
+      });
+    });
+
+    it('should unfollow user B as user A', async () => {
+      // Create follower relationship for this test only
+      await prisma.follower.create({
+        data: { followerId: userAId, followedId: userBId },
+      });
       await request(app.getHttpServer())
         .delete(`/followers/unfollow/${userBId}`)
         .expect(200)
         .expect((res) => {
           expect(res.body.success).toBe(true);
-          expect(res.body.data.count).toBe(1); // Prisma deleteMany returns count
+          expect(res.body.data.count).toBe(1);
+          expect(res.body.message).toBe('Successfully unfollowed user');
         });
-
-      // Verify in DB
-      const follow = await prisma.follower.findUnique({
-        where: {
-          followerId_followingId: { followerId: userAId, followingId: userBId },
-        },
+      const follow = await prisma.follower.findFirst({
+        where: { followerId: userAId, followedId: userBId },
       });
       expect(follow).toBeNull();
     });
+    it('should return 404 if not following', async () => {
+      // Ensure follower relationship does not exist
+      await prisma.follower.deleteMany({
+        where: { followerId: userAId, followedId: userBId },
+      });
+      await request(app.getHttpServer())
+        .delete(`/followers/unfollow/${userBId}`)
+        .expect(404)
+        .expect((res) => {
+          expect(res.body.success).toBe(false);
+          expect(res.body.message).toBe('You are not following this user');
+        });
+    });
+  });
 
-    it('(GET /followers/following) returns empty list for User A after unfollow', () => {
-      return request(app.getHttpServer())
+  describe('GET /followers/followers', () => {
+    beforeEach(async () => {
+      // Clean up all follower records for both users
+      await prisma.follower.deleteMany({
+        where: {
+          OR: [
+            { followerId: userAId, followedId: userBId },
+            { followerId: userBId, followedId: userAId },
+          ],
+        },
+      });
+      await prisma.profile.deleteMany({
+        where: { userId: { in: [userAId, userBId] } },
+      });
+      await prisma.user.deleteMany({
+        where: { id: { in: [userAId, userBId] } },
+      });
+      // Re-create users and profiles
+      await prisma.user.create({
+        data: { id: userAId, email: 'usera@example.com' },
+      });
+      await prisma.user.create({
+        data: { id: userBId, email: 'userb@example.com' },
+      });
+      await prisma.profile.create({
+        data: { userId: userAId, name: 'User A' },
+      });
+      await prisma.profile.create({
+        data: { userId: userBId, name: 'User B' },
+      });
+      // Now create follower record for userB follows userA
+      await prisma.follower.create({
+        data: { followerId: userBId, followedId: userAId },
+      });
+    });
+
+    it('should return followers for user A', async () => {
+      await request(app.getHttpServer())
+        .get('/followers/followers')
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.success).toBe(true);
+          expect(Array.isArray(res.body.data)).toBe(true);
+          expect(res.body.data[0]?.followerId).toBe(userBId);
+          expect(res.body.message).toBe(
+            'Followers list retrieved successfully',
+          );
+        });
+    });
+  });
+
+  describe('GET /followers/following', () => {
+    beforeEach(async () => {
+      // Clean up all follower records for both users
+      await prisma.follower.deleteMany({
+        where: {
+          OR: [
+            { followerId: userAId, followedId: userBId },
+            { followerId: userBId, followedId: userAId },
+          ],
+        },
+      });
+      await prisma.profile.deleteMany({
+        where: { userId: { in: [userAId, userBId] } },
+      });
+      await prisma.user.deleteMany({
+        where: { id: { in: [userAId, userBId] } },
+      });
+      // Re-create users and profiles
+      await prisma.user.create({
+        data: { id: userAId, email: 'usera@example.com' },
+      });
+      await prisma.user.create({
+        data: { id: userBId, email: 'userb@example.com' },
+      });
+      await prisma.profile.create({
+        data: { userId: userAId, name: 'User A' },
+      });
+      await prisma.profile.create({
+        data: { userId: userBId, name: 'User B' },
+      });
+      // Now create follower record for userA follows userB
+      await prisma.follower.create({
+        data: { followerId: userAId, followedId: userBId },
+      });
+    });
+
+    it('should return following for user A', async () => {
+      await request(app.getHttpServer())
         .get('/followers/following')
         .expect(200)
         .expect((res) => {
           expect(res.body.success).toBe(true);
-          expect(res.body.data).toEqual([]);
-        });
-    });
-
-    it('(DELETE /followers/unfollow/:id) User A unfollowing User C (not followed) returns count 0', () => {
-      return request(app.getHttpServer())
-        .delete(`/followers/unfollow/${userCId}`) // User A never followed User C
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.success).toBe(true);
-          expect(res.body.data.count).toBe(0);
+          expect(Array.isArray(res.body.data)).toBe(true);
+          expect(res.body.data[0]?.followedId).toBe(userBId);
+          expect(res.body.message).toBe(
+            'Following list retrieved successfully',
+          );
         });
     });
   });

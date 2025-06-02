@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
+import { v4 as uuidv4 } from 'uuid';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
@@ -17,7 +18,9 @@ describe('ProfilesController (e2e)', () => {
     // Delete profiles before users
     await prismaInstance.profile.deleteMany({
       where: { user: { email: { contains: '@test-e2e-profile.com' } } },
-    });
+      });
+
+
     await prismaInstance.user.deleteMany({
       where: { email: { contains: '@test-e2e-profile.com' } },
     });
@@ -206,5 +209,56 @@ describe('ProfilesController (e2e)', () => {
     });
 
     // Add more tests for PUT if needed (e.g., empty payload, invalid data if DTOs were used)
+  });
+
+  describe('POST /profile', () => {
+    it('should create a new user profile', async () => {
+      // Generate a new UUID for userId
+      const newUserId = uuidv4();
+      const newUserEmail = `newuser-${Date.now()}@test-e2e-profile.com`;
+      const payload = {
+        userId: newUserId,
+        email: newUserEmail,
+      };
+
+      const res = await request(app.getHttpServer())
+        .post('/profile')
+        .send(payload)
+        .expect(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.userId).toBe(newUserId);
+      expect(res.body.data.name).toBe(newUserEmail.split('@')[0]);
+      expect(res.body.message).toBe('Profile created successfully');
+
+      // Confirm in DB
+      const profileDb = await prisma.profile.findUnique({ where: { userId: newUserId } });
+      expect(profileDb).toBeDefined();
+      expect(profileDb?.userId).toBe(newUserId);
+    });
+
+    it('should not allow duplicate profile creation', async () => {
+      // Use UserA's ID and email
+      const payload = {
+        userId: userAId,
+        email: 'user-a@test-e2e-profile.com',
+      };
+      const res = await request(app.getHttpServer())
+        .post('/profile')
+        .send(payload)
+        .expect(409); // Conflict
+      expect(res.body.message).toMatch(/already exists/i);
+    });
+
+    it('should return 400 for invalid payload', async () => {
+      const payload = {
+        userId: 'not-a-uuid', // Invalid UUID
+        email: 'not-an-email', // Invalid email
+      };
+      const res = await request(app.getHttpServer())
+        .post('/profile')
+        .send(payload)
+        .expect(400);
+      expect(res.body.message).toBeDefined();
+    });
   });
 });
