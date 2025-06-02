@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PostsService } from './posts.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserRestService } from 'src/external/user/user.rest.service';
-import { MediaRestService } from 'src/external/media/media.rest.service';
+import { UserRestService } from '../external/user/user.rest.service';
+import { MediaRestService } from '../external/media/media.rest.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { LikePostDto } from './dto/like-post.dto';
@@ -36,6 +36,12 @@ const mockMediaRestService = {
   associateMediaToPost: jest.fn(),
 };
 
+const mockRabbitMQService = {
+  // Add any RabbitMQ service methods that PostsService uses
+  emit: jest.fn(),
+  send: jest.fn(),
+};
+
 describe('PostsService', () => {
   let service: PostsService;
   // let prisma: PrismaService; // Unused
@@ -49,6 +55,7 @@ describe('PostsService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: UserRestService, useValue: mockUserRestService },
         { provide: MediaRestService, useValue: mockMediaRestService },
+        { provide: 'RABBITMQ_SERVICE', useValue: mockRabbitMQService },
       ],
     }).compile();
 
@@ -64,33 +71,58 @@ describe('PostsService', () => {
   });
 
   describe('create', () => {
-    const createPostDto: CreatePostDto = { userId: 'user1', content: 'Test Post' };
-    const createdPost = { id: 'post1', ...createPostDto, mediaUrl: null, createdAt: new Date(), updatedAt: new Date() };
+    const createPostDto: CreatePostDto = {
+      userId: 'user1',
+      content: 'Test Post',
+    };
+    const createdPost = {
+      id: 'post1',
+      ...createPostDto,
+      mediaUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     it('should create a post without mediaId', async () => {
       mockPrismaService.post.create.mockResolvedValue(createdPost);
       const result = await service.create(createPostDto);
-      expect(mockPrismaService.post.create).toHaveBeenCalledWith({ data: { userId: 'user1', content: 'Test Post', mediaUrl: undefined } });
+      expect(mockPrismaService.post.create).toHaveBeenCalledWith({
+        data: { userId: 'user1', content: 'Test Post', mediaUrl: undefined },
+      });
       expect(mockMediaRestService.associateMediaToPost).not.toHaveBeenCalled();
       expect(mockPrismaService.post.update).not.toHaveBeenCalled();
       expect(result).toEqual(createdPost);
     });
 
     it('should create a post with mediaId and associate media', async () => {
-      const dtoWithMedia: CreatePostDto = { ...createPostDto, mediaId: 'media1' };
+      const dtoWithMedia: CreatePostDto = {
+        ...createPostDto,
+        mediaId: 'media1',
+      };
       const mediaInfo = { id: 'media1', url: 'http://example.com/media.jpg' };
       mockPrismaService.post.create.mockResolvedValue(createdPost); // Initial creation
       mockMediaRestService.associateMediaToPost.mockResolvedValue(mediaInfo);
-      mockPrismaService.post.update.mockResolvedValue({ ...createdPost, mediaUrl: mediaInfo.url }); // Mock update call as well
+      mockPrismaService.post.update.mockResolvedValue({
+        ...createdPost,
+        mediaUrl: mediaInfo.url,
+      }); // Mock update call as well
 
       const result = await service.create(dtoWithMedia);
 
-      expect(mockPrismaService.post.create).toHaveBeenCalledWith({ data: { userId: 'user1', content: 'Test Post', mediaUrl: undefined } });
-      expect(mockMediaRestService.associateMediaToPost).toHaveBeenCalledWith('media1', createdPost.id);
-      expect(mockPrismaService.post.update).toHaveBeenCalledWith({ where: { id: createdPost.id }, data: { mediaUrl: mediaInfo.url } });
+      expect(mockPrismaService.post.create).toHaveBeenCalledWith({
+        data: { userId: 'user1', content: 'Test Post', mediaUrl: undefined },
+      });
+      expect(mockMediaRestService.associateMediaToPost).toHaveBeenCalledWith(
+        'media1',
+        createdPost.id,
+      );
+      expect(mockPrismaService.post.update).toHaveBeenCalledWith({
+        where: { id: createdPost.id },
+        data: { mediaUrl: mediaInfo.url },
+      });
       // The service currently returns the initially created post, not the updated one from prisma.post.update.
       // If the intention is to return the post with the mediaUrl, the service logic might need adjustment or this test needs to reflect the current behavior.
-      expect(result).toEqual(createdPost); 
+      expect(result).toEqual(createdPost);
     });
   });
 
@@ -148,9 +180,9 @@ describe('PostsService', () => {
       const comments = [{ id: 'c1', content: 'Comment 1' }];
       const likesCount = 5;
       mockPrismaService.$transaction.mockResolvedValue([comments, likesCount]);
-      
+
       const result = await service.getPostInteractions(postId);
-      
+
       expect(mockPrismaService.$transaction).toHaveBeenCalledWith([
         mockPrismaService.comment.findMany({ where: { postId } }),
         mockPrismaService.like.count({ where: { postId } }),
@@ -166,12 +198,12 @@ describe('PostsService', () => {
       const followingUsers = [{ id: 'user2' }, { id: 'user3' }];
       const followedIds = ['user2', 'user3'];
       const posts = [{ id: 'post1', userId: 'user2' }];
-      
+
       mockUserRestService.getFollowing.mockResolvedValue(followingUsers);
       mockPrismaService.post.findMany.mockResolvedValue(posts);
-      
+
       const result = await service.getFeed(userId, pagination);
-      
+
       expect(mockUserRestService.getFollowing).toHaveBeenCalledWith(userId);
       expect(mockPrismaService.post.findMany).toHaveBeenCalledWith({
         where: { userId: { in: followedIds } },
@@ -192,9 +224,9 @@ describe('PostsService', () => {
     it('should return post with author profile', async () => {
       mockPrismaService.post.findUnique.mockResolvedValue(post);
       mockUserRestService.getUserProfile.mockResolvedValue(authorProfile);
-      
+
       const result = await service.getPostWithAuthor(postId);
-      
+
       expect(mockPrismaService.post.findUnique).toHaveBeenCalledWith({ where: { id: postId } });
       expect(mockUserRestService.getUserProfile).toHaveBeenCalledWith(post.userId);
       expect(result).toEqual({ ...post, author: authorProfile });
