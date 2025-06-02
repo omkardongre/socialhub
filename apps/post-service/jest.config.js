@@ -10,5 +10,7 @@ module.exports = {
   testEnvironment: 'node',
   moduleNameMapper: {
     '^src/(.*)$': '<rootDir>/$1',
+    '^@libs/events$': '<rootDir>/../../../libs/events',
+    '^@libs/events/(.*)$': '<rootDir>/../../../libs/events/$1',
   },
 };
