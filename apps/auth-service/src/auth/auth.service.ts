@@ -18,6 +18,7 @@ import { add } from 'date-fns';
 import { UserRestService } from '../external/user/user.rest.service';
 import { NotificationRestService } from '../external/notification/notification.rest.service';
 import { Session, User } from '@prisma/client';
+import { SendGridService } from 'src/sendgrid/sendgrid.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
     private jwtService: JwtService,
     private userRestService: UserRestService,
     private notificationRestService: NotificationRestService,
+    private sendGridService: SendGridService, // Inject SendGridService
   ) {}
 
   async signup(dto: SignupDto) {
@@ -62,9 +64,14 @@ export class AuthService {
           );
         });
 
-      this.logger.log(
-        `Verify your account: http://localhost:3000/auth/verify?token=${verificationToken}`,
-      );
+      try {
+        await this.sendVerificationEmail(user.email, verificationToken);
+        this.logger.log(`Verification email sent to: ${user.email}`);
+      } catch (emailError) {
+        this.logger.error(
+          `Failed to send verification email to ${user.email}: ${emailError.message}`,
+        );
+      }
 
       return {
         userId: user.id,
@@ -196,6 +203,7 @@ export class AuthService {
     }
 
     if (user.isVerified) {
+      this.logger.log(`Email already verified for user: ${user.email}`);
       return {
         success: true,
         message: 'Email already verified',
@@ -228,6 +236,9 @@ export class AuthService {
         // Continue even if notification preferences fail
       }
 
+      this.logger.log(
+        `Email verified and profile initialized for user: ${user.email}`,
+      );
       return {
         success: true,
         message: 'Email verified and profile initialized successfully',
@@ -295,5 +306,13 @@ export class AuthService {
       { sub: user.id, email: user.email },
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
     );
+  }
+
+  private async sendVerificationEmail(email: string, token: string) {
+    const verificationLink = `http://localhost:3001/auth/verify?token=${token}`;
+    const subject = 'Verify your email address';
+    const text = `Please verify your email by clicking the following link: ${verificationLink}`;
+    const html = `<p>Please verify your email by clicking the following link:</p><p><a href="${verificationLink}">${verificationLink}</a></p>`;
+    await this.sendGridService.sendEmail(email, subject, text, html);
   }
 }

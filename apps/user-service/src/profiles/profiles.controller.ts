@@ -20,7 +20,6 @@ import {
 } from '@nestjs/swagger';
 import { CreateProfileDto } from './dto/create-profile.dto';
 
-@UseGuards(JwtAuthGuard)
 @ApiTags('Profiles')
 @ApiBearerAuth()
 @Controller('profile')
@@ -39,6 +38,7 @@ export class ProfilesController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get user profile by user ID' })
   @ApiResponse({ status: 200, description: 'User profile found' })
   @ApiResponse({ status: 404, description: 'Profile not found' })
@@ -53,6 +53,7 @@ export class ProfilesController {
   }
 
   @Put()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update your profile' })
   @ApiResponse({ status: 200, description: 'Profile updated' })
   @ApiBody({
@@ -66,6 +67,7 @@ export class ProfilesController {
       },
     },
   })
+  @UseGuards(JwtAuthGuard)
   async updateProfile(
     @Req() req,
     @Body() body: { bio?: string; avatarUrl?: string },
