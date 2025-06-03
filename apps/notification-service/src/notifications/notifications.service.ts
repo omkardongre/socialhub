@@ -50,7 +50,7 @@ export class NotificationsService {
           this.logger.debug(`Preferences already exist for user: ${userId}`);
           return;
         }
-        if (error.code === 'P2003') {
+        if (error.code === 'P2003' || error.code === 'P2025') {
           this.logger.warn(
             `User not found when creating preferences: ${userId}`,
           );
