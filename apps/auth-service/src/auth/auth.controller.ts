@@ -5,20 +5,19 @@ import {
   Get,
   Req,
   UseGuards,
-  ForbiddenException,
   Query,
-  UnauthorizedException,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
+import { ConfigService } from '@nestjs/config';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
 import { Request } from 'express';
-import { Session } from './types/session.type';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -38,6 +37,7 @@ export class AuthController {
     private authService: AuthService,
     private jwtService: JwtService,
     private prisma: PrismaService,
+    private configService: ConfigService,
   ) {}
 
   @Get('health')
@@ -66,13 +66,22 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Login successful' })
   @ApiResponse({ status: 403, description: 'Invalid credentials' })
   @ApiBody({ type: LoginDto })
-  async login(@Body() dto: LoginDto) {
+  async login(@Body() dto: LoginDto, @Res() res: Response) {
     const tokens = await this.authService.login(dto);
-    return {
+
+    // Set access token as HttpOnly cookie
+    res.cookie('token', tokens.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 10 * 24 * 60 * 60 * 1000, // 10 days
+    });
+
+    return res.json({
       success: true,
-      data: tokens,
       message: 'Login successful',
-    };
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -109,7 +118,32 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify user email' })
   @ApiResponse({ status: 200, description: 'Email verified' })
   @ApiResponse({ status: 404, description: 'Invalid token' })
-  async verifyEmail(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
+  async verifyEmail(@Query('token') token: string, @Res() res: Response) {
+    try {
+      const result = await this.authService.verifyEmail(token);
+      // Show a simple HTML page on success
+      const loginUrl = this.configService.get<string>('SIGNUP_SUCCESS_URL');
+      return res.status(200).send(`
+        <html>
+          <head><title>Email Verified</title></head>
+          <body style="font-family:sans-serif;text-align:center;padding-top:50px;">
+            <h1>✅ Email Verified!</h1>
+            <p>${result.message}</p>
+            <a href="${loginUrl}">Go to Login</a>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      // Show error as HTML
+      return res.status(400).send(`
+        <html>
+          <head><title>Verification Failed</title></head>
+          <body style="font-family:sans-serif;text-align:center;padding-top:50px;">
+            <h1>❌ Verification Failed</h1>
+            <p>${error.message || 'Invalid or expired verification link.'}</p>
+          </body>
+        </html>
+      `);
+    }
   }
 }
