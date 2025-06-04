@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    domains: ["gravatar.com"],
+  },
   async rewrites() {
     return [
       {
@@ -9,6 +12,14 @@ const nextConfig = {
       {
         source: "/api/user/:path*",
         destination: "http://localhost:3002/user/:path*", // Proxy to User Service
+      },
+      {
+        source: "/api/profile/:path*",
+        destination: "http://localhost:3002/profile/:path*",
+      },
+      {
+        source: "/api/users/:path*",
+        destination: "http://localhost:3002/users/:path*",
       },
       {
         source: "/api/posts/:path*",

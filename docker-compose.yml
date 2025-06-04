@@ -155,14 +155,14 @@ services:
       postgres:
         condition: service_healthy
 
-  frontend:
-    build:
-      context: .
-      dockerfile: ./apps/frontend-nextjs/Dockerfile
-    ports:
-      - "3007:3000"
-    environment:
-      - NODE_ENV=development
+  # frontend:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/frontend-nextjs/Dockerfile
+  #   ports:
+  #     - "3007:3000"
+  #   environment:
+  #     - NODE_ENV=development
 
 # Volumes for persistent data
 volumes:
