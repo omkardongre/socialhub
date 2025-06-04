@@ -22,17 +22,11 @@ export class PostsService {
     @Inject('RABBITMQ_SERVICE') private rabbitmqClient: ClientProxy,
   ) {}
 
-  async create(createPostDto: CreatePostDto) {
-    // Check if user exists by trying to get their profile
-    try {
-      await this.userRestService.getUserProfile(createPostDto.userId);
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      throw new ConflictException(
-        `User with id ${createPostDto.userId} does not exist: ${errorMessage}`,
-      );
+  async create(createPostDto: CreatePostDto, authHeader: string) {
+    if (!createPostDto.userId) {
+      throw new ConflictException('User ID is required');
     }
+    await this.userRestService.getUserProfile(createPostDto.userId, authHeader);
 
     // If mediaId is provided, we'll try to associate it later
     // The association will fail if the media doesn't exist
@@ -103,7 +97,8 @@ export class PostsService {
         },
       });
     } catch (error: any) {
-      if (error.code === 'P2002') {
+      // Only catch and rethrow known business exceptions
+      if (error?.code === 'P2002') {
         throw new ConflictException('User already liked this post');
       }
       throw error;
@@ -118,24 +113,55 @@ export class PostsService {
     return { comments, likesCount: likes };
   }
 
-  async getFeed(userId: string, pagination: { limit: number; offset: number }) {
-    const followingUsers = await this.userRestService.getFollowing(userId);
-    const followedIds = followingUsers
-      .map((user: { id: string } | string) => {
-        return typeof user === 'string' ? user : user.id;
-      })
-      .filter((id): id is string => Boolean(id));
+  async getFeed(
+    userId: string,
+    pagination: { limit: number; offset: number },
+    authHeader: string,
+  ) {
+    const followingUsers = await this.userRestService.getFollowing(
+      userId,
+      authHeader,
+    );
+    const followedIds = followingUsers.map((follower) => follower.followedId);
+    followedIds.push(userId);
 
-    return this.prisma.post.findMany({
+    const posts = await this.prisma.post.findMany({
       where: { userId: { in: followedIds } },
       orderBy: { createdAt: 'desc' },
       skip: pagination.offset,
       take: pagination.limit,
       include: { comments: true, likes: true },
     });
+
+    // Fetch all user profiles in parallel and cache by userId
+    const userProfilesMap = new Map<string, any>();
+    await Promise.all(
+      Array.from(new Set(posts.map((post) => post.userId))).map(async (uid) => {
+        try {
+          const profile = await this.userRestService.getUserProfile(
+            uid,
+            authHeader,
+          );
+          userProfilesMap.set(uid, profile);
+        } catch {
+          userProfilesMap.set(uid, null);
+        }
+      }),
+    );
+
+    // Attach user profile to each post
+    const postsWithUser = posts.map((post) => {
+      const userResp = userProfilesMap.get(post.userId);
+      return {
+        ...post,
+        user: userResp && userResp.success ? userResp.data : null,
+      };
+    });
+
+    return postsWithUser;
   }
 
-  async getPostWithAuthor(postId: string) {
+  async getPostWithAuthor(postId: string, authHeader: string) {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
     });
@@ -144,21 +170,14 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
-    try {
-      const authorProfile = await this.userRestService.getUserProfile(
-        post.userId,
-      );
+    const authorProfile = await this.userRestService.getUserProfile(
+      post.userId,
+      authHeader,
+    );
 
-      return {
-        ...post,
-        author: authorProfile,
-      };
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Failed to fetch author profile';
-      throw new NotFoundException(`Error fetching author: ${errorMessage}`);
-    }
+    return {
+      ...post,
+      author: authorProfile,
+    };
   }
 }

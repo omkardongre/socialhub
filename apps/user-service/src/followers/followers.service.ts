@@ -154,7 +154,7 @@ export class FollowersService {
     try {
       const following = await this.prisma.follower.findMany({
         where: { followerId: userId },
-        include: { follower: true },
+        // include: { follower: true },
       });
 
       if (following.length === 0) {

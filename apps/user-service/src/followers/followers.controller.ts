@@ -21,7 +21,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Followers')
 @ApiBearerAuth()
-@Controller('followers')
+@Controller('users')
 export class FollowersController {
   constructor(private readonly followersService: FollowersService) {}
 
@@ -37,7 +37,7 @@ export class FollowersController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('follow/:id')
+  @Post(':id/follow')
   @ApiOperation({ summary: 'Follow a user' })
   @ApiResponse({ status: 201, description: 'User followed' })
   async follow(@CurrentUser() user: JwtPayload, @Param('id') userId: string) {
@@ -50,7 +50,7 @@ export class FollowersController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Delete('unfollow/:id')
+  @Delete(':id/follow')
   @ApiOperation({ summary: 'Unfollow a user' })
   @ApiResponse({ status: 200, description: 'User unfollowed' })
   async unfollow(@CurrentUser() user: JwtPayload, @Param('id') userId: string) {
@@ -73,11 +73,11 @@ export class FollowersController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('followers')
-  @ApiOperation({ summary: 'Get your followers' })
+  @Get(':id/followers')
+  @ApiOperation({ summary: 'Get followers of a user' })
   @ApiResponse({ status: 200, description: 'List of followers' })
-  async getFollowers(@CurrentUser() user: JwtPayload) {
-    const followers = await this.followersService.getFollowers(user.sub);
+  async getFollowers(@Param('id') userId: string) {
+    const followers = await this.followersService.getFollowers(userId);
     return {
       success: true,
       data: followers,
@@ -86,11 +86,11 @@ export class FollowersController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('following')
-  @ApiOperation({ summary: 'Get users you are following' })
+  @Get(':id/following')
+  @ApiOperation({ summary: 'Get users a user is following' })
   @ApiResponse({ status: 200, description: 'List of following users' })
-  async getFollowing(@CurrentUser() user: JwtPayload) {
-    const following = await this.followersService.getFollowing(user.sub);
+  async getFollowing(@Param('id') userId: string) {
+    const following = await this.followersService.getFollowing(userId);
     return {
       success: true,
       data: following,
