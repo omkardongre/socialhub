@@ -42,7 +42,7 @@ export class ProfilesController {
   @ApiOperation({ summary: 'Get user profile by user ID' })
   @ApiResponse({ status: 200, description: 'User profile found' })
   @ApiResponse({ status: 404, description: 'Profile not found' })
-  async getProfile(@Param('id') id: string) {
+  async getProfile(@Param('id') id: string, @Req() req) {
     const profile = await this.profilesService.getProfileByUserId(id);
     if (!profile) throw new NotFoundException('Profile not found');
     return {
