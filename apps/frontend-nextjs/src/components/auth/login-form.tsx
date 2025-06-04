@@ -39,30 +39,35 @@ export function LoginForm() {
         }}
         className="space-y-4"
       >
-      <Input
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        type="email"
-        required
-      />
-      <Input
-        placeholder="Password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
-      <Button type="submit" disabled={login.isPending} className="w-full">
-        {login.isPending ? "Logging in..." : "Login"}
-      </Button>
-      {error && <div className="text-red-500 text-sm">{error}</div>}
-      {success && <div className="text-green-600 text-sm">{success}</div>}
-    </form>
-    <div className="text-center mt-4 text-sm">
-      Don&apos;t have an account?{' '}
-      <Link href="/auth/signup" className="text-blue-600 hover:underline font-medium">Sign Up</Link>
-    </div>
+        <Input
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          type="email"
+          required
+        />
+        <Input
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <Button type="submit" disabled={login.isPending} className="w-full">
+          {login.isPending ? "Logging in..." : "Login"}
+        </Button>
+        {error && <div className="text-red-500 text-sm">{error}</div>}
+        {success && <div className="text-green-600 text-sm">{success}</div>}
+      </form>
+      <div className="text-center mt-4 text-sm">
+        Don&apos;t have an account?{" "}
+        <Link
+          href="/auth/signup"
+          className="text-blue-600 hover:underline font-medium"
+        >
+          Sign Up
+        </Link>
+      </div>
     </>
   );
 }

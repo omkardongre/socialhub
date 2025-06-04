@@ -8,15 +8,14 @@ import {
 
 export class CreatePostDto {
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(500)
-  userId: string;
+  userId?: string;
 
   @IsString()
   @IsNotEmpty()
   content: string;
 
-  @IsOptional()
   @IsUrl()
   @IsOptional()
   @IsString()

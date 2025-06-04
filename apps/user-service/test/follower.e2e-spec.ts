@@ -83,7 +83,7 @@ describe('FollowersController (e2e)', () => {
   describe('GET /followers/health', () => {
     it('should return health status', () => {
       return request(app.getHttpServer())
-        .get('/followers/health')
+        .get('/users/health')
         .expect(200)
         .expect({
           success: true,
@@ -96,7 +96,7 @@ describe('FollowersController (e2e)', () => {
   describe('POST /followers/follow/:id', () => {
     it('should follow user B as user A', async () => {
       await request(app.getHttpServer())
-        .post(`/followers/follow/${userBId}`)
+        .post(`/users/${userBId}/follow`)
         .expect(201)
         .expect((res) => {
           expect(res.body.success).toBe(true);
@@ -114,7 +114,7 @@ describe('FollowersController (e2e)', () => {
 
     it('should not allow self-follow', async () => {
       await request(app.getHttpServer())
-        .post(`/followers/follow/${userAId}`)
+        .post(`/users/${userAId}/follow`)
         .expect(400)
         .expect((res) => {
           expect(res.body.message).toMatch(/Can't follow yourself/);
@@ -160,7 +160,7 @@ describe('FollowersController (e2e)', () => {
         data: { followerId: userAId, followedId: userBId },
       });
       await request(app.getHttpServer())
-        .delete(`/followers/unfollow/${userBId}`)
+        .delete(`/users/${userBId}/follow`)
         .expect(200)
         .expect((res) => {
           expect(res.body.success).toBe(true);
@@ -178,7 +178,7 @@ describe('FollowersController (e2e)', () => {
         where: { followerId: userAId, followedId: userBId },
       });
       await request(app.getHttpServer())
-        .delete(`/followers/unfollow/${userBId}`)
+        .delete(`/users/${userBId}/follow`)
         .expect(404)
         .expect((res) => {
           expect(res.body.success).toBe(false);
@@ -225,7 +225,7 @@ describe('FollowersController (e2e)', () => {
 
     it('should return followers for user A', async () => {
       await request(app.getHttpServer())
-        .get('/followers/followers')
+        .get(`/users/${userAId}/followers`)
         .expect(200)
         .expect((res) => {
           expect(res.body.success).toBe(true);
@@ -276,7 +276,7 @@ describe('FollowersController (e2e)', () => {
 
     it('should return following for user A', async () => {
       await request(app.getHttpServer())
-        .get('/followers/following')
+        .get(`/users/${userAId}/following`)
         .expect(200)
         .expect((res) => {
           expect(res.body.success).toBe(true);

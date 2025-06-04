@@ -21,8 +21,20 @@ export class PostsController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() createPostDto: CreatePostDto) {
-    const post = await this.postsService.create(createPostDto);
+  async create(@Body() createPostDto: CreatePostDto, @Req() req) {
+    const authHeader =
+      req.headers['authorization'] ||
+      (req.cookies?.token ? `Bearer ${req.cookies.token}` : undefined);
+
+    const userId = req.user.userId;
+
+    const post = await this.postsService.create(
+      {
+        ...createPostDto,
+        userId,
+      },
+      authHeader,
+    );
     return {
       success: true,
       data: post,
@@ -74,11 +86,21 @@ export class PostsController {
   @UseGuards(JwtAuthGuard)
   @Get('/feed')
   async getFeed(@Req() req, @Query() query: FeedQueryDto) {
+    const authHeader =
+      req.headers['authorization'] ||
+      (req.cookies?.token ? `Bearer ${req.cookies.token}` : undefined);
+
     const userId = req.user.userId;
-    const feed = await this.postsService.getFeed(userId, {
-      limit: Number(query.limit) || 10,
-      offset: Number(query.offset) || 0,
-    });
+
+    const feed = await this.postsService.getFeed(
+      userId,
+      {
+        limit: Number(query.limit) || 10,
+        offset: Number(query.offset) || 0,
+      },
+      authHeader,
+    );
+
     return {
       success: true,
       data: feed,

@@ -62,6 +62,7 @@ describe('FollowersController', () => {
   // --- Tests for follow ---
   describe('follow', () => {
     it('should call followersService.followUser and return success', async () => {
+      // For /users/:id/follow, user param is still the follower, targetUserId is :id
       const user = mockJwtPayload('user1');
       const targetUserId = 'user2';
       const mockResult = {
@@ -98,6 +99,7 @@ describe('FollowersController', () => {
   // --- Tests for unfollow ---
   describe('unfollow', () => {
     it('should call followersService.unfollowUser and return success', async () => {
+      // For /users/:id/follow (DELETE), user param is still the follower, targetUserId is :id
       const user = mockJwtPayload('user1');
       const targetUserId = 'user2';
       const mockResult = { count: 1 }; // Prisma result for deleteMany
@@ -117,16 +119,17 @@ describe('FollowersController', () => {
   // --- Tests for getFollowers ---
   describe('getFollowers', () => {
     it('should call followersService.getFollowers and return the list', async () => {
-      const user = mockJwtPayload('user1');
+      // For /users/:id/followers, pass userId as param
+      const userId = 'user1';
       const mockFollowersList = [
         { followerId: 'user3' },
         { followerId: 'user4' },
       ];
       mockFollowersService.getFollowers.mockResolvedValue(mockFollowersList);
 
-      const response = await controller.getFollowers(user);
+      const response = await controller.getFollowers(userId);
 
-      expect(service.getFollowers).toHaveBeenCalledWith(user.sub);
+      expect(service.getFollowers).toHaveBeenCalledWith(userId);
       expect(response).toEqual({
         success: true,
         data: mockFollowersList,
@@ -138,16 +141,17 @@ describe('FollowersController', () => {
   // --- Tests for getFollowing ---
   describe('getFollowing', () => {
     it('should call followersService.getFollowing and return the list', async () => {
-      const user = mockJwtPayload('user1');
+      // For /users/:id/following, pass userId as param
+      const userId = 'user1';
       const mockFollowingList = [
         { followingId: 'user5' },
         { followingId: 'user6' },
       ];
       mockFollowersService.getFollowing.mockResolvedValue(mockFollowingList);
 
-      const response = await controller.getFollowing(user);
+      const response = await controller.getFollowing(userId);
 
-      expect(service.getFollowing).toHaveBeenCalledWith(user.sub);
+      expect(service.getFollowing).toHaveBeenCalledWith(userId);
       expect(response).toEqual({
         success: true,
         data: mockFollowingList,

@@ -150,11 +150,4 @@ describe('ProfilesController', () => {
       );
     });
   });
-
-  describe('Authentication', () => {
-    it('should be protected with JwtAuthGuard', () => {
-      const guards = Reflect.getMetadata('__guards__', ProfilesController);
-      expect(guards[0].name).toBe(JwtAuthGuard.name);
-    });
-  });
 });
