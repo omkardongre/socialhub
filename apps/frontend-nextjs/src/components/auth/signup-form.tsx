@@ -2,6 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
+import { AxiosError } from "axios";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,8 +23,15 @@ export function SignupForm() {
     onSuccess: () => {
       setSuccess("Signup successful! Please check your email or login.");
     },
-    onError: (err: any) => {
-      setError(err?.response?.data?.message || "Signup failed");
+    onError: (err) => {
+      if ((err as AxiosError)?.response) {
+        setError(
+          ((err as AxiosError).response?.data as { message?: string })?.message ||
+            "Signup failed"
+        );
+      } else {
+        setError((err as Error).message || "Signup failed");
+      }
     },
   });
 
