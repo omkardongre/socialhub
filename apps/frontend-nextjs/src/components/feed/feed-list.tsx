@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { PostCard } from "./post-card";
 import { api } from "@/lib/axios";
+import { Post } from "@/types/post";
 
 export function FeedList() {
   const { data, isLoading } = useQuery({
@@ -16,7 +17,7 @@ export function FeedList() {
 
   return (
     <div className="space-y-4">
-      {posts.map((post: any) => (
+      {posts.map((post: Post) => (
         <PostCard key={post.id} post={post} />
       ))}
     </div>
