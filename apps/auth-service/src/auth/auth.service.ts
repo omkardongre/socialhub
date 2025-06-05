@@ -89,8 +89,10 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
+    this.logger.log(`Login attempt for email: ${dto.email}`);
     try {
       if (!dto.email || !dto.password) {
+        this.logger.warn('Login failed: missing email or password');
         throw new BadRequestException('Email and password are required');
       }
 
@@ -99,10 +101,14 @@ export class AuthService {
       });
 
       if (!user) {
+        this.logger.warn(`Login failed: user not found for email ${dto.email}`);
         throw new ForbiddenException('Invalid credentials');
       }
 
       if (!user.isVerified) {
+        this.logger.warn(
+          `Login failed: email not verified for user ${dto.email}`,
+        );
         throw new UnauthorizedException('Email not verified');
       }
 
@@ -114,6 +120,9 @@ export class AuthService {
         });
 
       if (!pwMatch) {
+        this.logger.warn(
+          `Login failed: invalid password for email ${dto.email}`,
+        );
         throw new ForbiddenException('Invalid credentials');
       }
 
@@ -164,6 +173,9 @@ export class AuthService {
         throw new InternalServerErrorException('Failed to create user session');
       }
 
+      this.logger.log(
+        `Login successful for userId: ${user.id}, email: ${user.email}`,
+      );
       return {
         access_token: accessToken,
         refresh_token: refreshToken,
