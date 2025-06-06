@@ -2,40 +2,25 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
-import { AxiosError } from "axios";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const router = useRouter();
 
   const login = useMutation({
-    mutationFn: async () => {
-      setError("");
-      setSuccess("");
-      return api.post("/auth/login", { email, password });
-    },
+    mutationFn: async () => api.post("/auth/login", { email, password }),
     onSuccess: () => {
-      setSuccess("Login successful! Redirecting...");
+      toast.success("Login successful! Redirecting...");
       setTimeout(() => router.push("/feed"), 1000);
     },
-    onError: (err) => {
-      if ((err as AxiosError)?.response) {
-        setError(
-          ((err as AxiosError).response?.data as { message?: string })
-            ?.message || "Login failed"
-        );
-      } else {
-        setError((err as Error).message || "Login failed");
-      }
-    },
+    // onError handled globally by Axios interceptor
   });
 
   return (
@@ -64,8 +49,6 @@ export function LoginForm() {
         <Button type="submit" disabled={login.isPending} className="w-full">
           {login.isPending ? "Logging in..." : "Login"}
         </Button>
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        {success && <div className="text-green-600 text-sm">{success}</div>}
       </form>
       <div className="text-center mt-4 text-sm">
         Don&apos;t have an account?{" "}

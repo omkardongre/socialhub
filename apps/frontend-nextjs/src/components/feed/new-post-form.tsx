@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/axios";
+import { toast } from "sonner";
 
 export function NewPostForm() {
   const [content, setContent] = useState("");
@@ -15,6 +16,7 @@ export function NewPostForm() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       setContent("");
+      toast.success("Post created!");
     },
   });
 
