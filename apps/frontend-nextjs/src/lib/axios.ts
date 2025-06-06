@@ -5,6 +5,13 @@ export const api = axios.create({
   withCredentials: true, // Important for HttpOnly cookie
 });
 
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // api.interceptors.request.use((config) => {
 //   console.log(
 //     "[API REQUEST]",
