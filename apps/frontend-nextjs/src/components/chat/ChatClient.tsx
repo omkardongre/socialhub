@@ -1,15 +1,20 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useChatSocket } from "@/hooks/useChatSocket";
 import { useRoomPresence } from "@/hooks/useRoomPresence";
 
 import MessageList from "@/components/chat/MessageList";
 import ChatInput from "@/components/chat/ChatInput";
+import { useReceiveMessage } from "@/hooks/useReceiveMessage";
 
-export default function ChatClient({ token }: { token: string }) {
-  const params = useParams();
-  const roomId = params.roomId as string | undefined;
+export default function ChatClient() {
+  const searchParams = useSearchParams();
+  const roomId = searchParams.get("roomId");
+
+  const socket = useChatSocket(roomId);
+  useRoomPresence(socket, roomId);
+  useReceiveMessage(socket, roomId);
 
   if (!roomId) {
     return (
@@ -21,10 +26,6 @@ export default function ChatClient({ token }: { token: string }) {
       </div>
     );
   }
-
-  const socket = useChatSocket(token, roomId);
-  useRoomPresence(socket, roomId);
-
 
   return (
     <>

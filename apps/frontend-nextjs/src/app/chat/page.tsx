@@ -1,32 +1,31 @@
-// app/chat/page.tsx (Server Component)
-import { cookies } from "next/headers";
-import ChatLayout from "@/components/chat/ChatLayout";
-import ChatSidebar from "@/components/chat/ChatSidebar";
-import ChatClient from "@/components/chat/ChatClient";
+// /apps/fontend-nextjs/src/app/chat/page.tsx
+"use client";
+import { useEffect, useState } from "react";
+import ChatShell from "@/components/chat/ChatShell";
 import { api } from "@/lib/axios";
 import { ChatRoom } from "@/types/chat";
 
-export default async function ChatPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value || "";
+export default function ChatPage() {
+  const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  console.log("token =", token);
+  useEffect(() => {
+    async function fetchRooms() {
+      setLoading(true);
+      try {
+        const res = await api.get("/chat-rooms");
+        setRooms(res.data.data);
+      } catch (e) {
+        console.error("Failed to fetch chat rooms:", e);
+        setRooms([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRooms();
+  }, []);
 
-  // Fetch rooms server-side
-  const res = await api.get("/chat-rooms", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  if (loading) return <div>Loading...</div>;
 
-  const rooms: ChatRoom[] = res.data.data;
-
-  console.log("rooms ", rooms);
-
-  return (
-    <ChatLayout
-      sidebar={<ChatSidebar initialRooms={rooms} />}
-      chatWindow={<ChatClient token={token} />}
-    />
-  );
+  return <ChatShell initialRooms={rooms} setRooms={setRooms} />;
 }

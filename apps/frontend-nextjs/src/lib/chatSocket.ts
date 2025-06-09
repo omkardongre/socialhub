@@ -1,7 +1,7 @@
 import { Socket } from "socket.io-client";
 
 export function sendMessage(
-  socket: Socket | undefined,
+  socket: Socket | null,
   roomId: string,
   content: string
 ) {

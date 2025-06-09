@@ -28,13 +28,15 @@ export default function ChatSidebar({
         participants: participantIds,
       });
       const newRoom = res.data.data;
+
       if (onNewRoom) {
         onNewRoom(newRoom);
       }
       router.push(`/chat?roomId=${newRoom.id}`, { scroll: false });
       setIsModalOpen(false);
     } catch (err) {
-      console.error("Error creating chat room:", err);
+      // Log errors for monitoring and debugging
+      console.error("[ChatSidebar] Error creating chat room:", err);
     }
   };
 

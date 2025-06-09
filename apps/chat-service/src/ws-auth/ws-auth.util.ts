@@ -1,6 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
 import { ConfigService } from '@nestjs/config';
+import * as cookie from 'cookie';
 
 export async function verifyWsClientToken(
   client: any,
@@ -25,11 +26,9 @@ export async function verifyWsClientToken(
 }
 
 function extractTokenFromClient(client: any): string | null {
-  const queryToken = client.handshake?.query?.token;
+  const cookieHeader = client.handshake.headers.cookie;
+  const cookies = cookie.parse(cookieHeader || '');
+  const token = cookies.token;
 
-  if (queryToken) {
-    return queryToken.startsWith('Bearer ') ? queryToken.slice(7) : queryToken;
-  }
-
-  return null;
+  return token;
 }
