@@ -19,6 +19,7 @@ import { CreateMessageDto } from '../dto/create-message.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { verifyWsClientToken } from '../../ws-auth/ws-auth.util';
+import * as cookie from 'cookie';
 
 // Extend the Socket interface to include our custom properties
 interface CustomSocket extends BaseSocket {
@@ -34,7 +35,7 @@ type Socket = CustomSocket;
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL || '*',
+    origin: process.env.API_GATEWAY || '*',
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -54,8 +55,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: Socket) {
     try {
       // Get token from query params
-      const token = client.handshake.query?.token as string;
       const roomId = client.handshake.query?.roomId as string;
+
+      const cookieHeader = client.handshake.headers.cookie;
+      const cookies = cookie.parse(cookieHeader || '');
+      const token = cookies.token;
 
       if (!token) {
         throw new WsException('No token provided');

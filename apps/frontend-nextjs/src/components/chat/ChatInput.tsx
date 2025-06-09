@@ -9,12 +9,21 @@ export default function ChatInput({
   socket,
 }: {
   roomId: string;
-  socket: Socket | undefined;
+  socket: Socket | null;
 }) {
   const [text, setText] = useState("");
 
   const handleSend = () => {
     if (!text.trim()) return;
+    if (!socket) {
+      console.error("No socket instance!");
+      return;
+    }
+    if (!socket.connected) {
+      console.error("Socket not connected!", socket.id, socket.connected);
+      return;
+    }
+    console.log("Sending message", { socketId: socket.id, roomId, text });
     sendMessage(socket, roomId, text);
     setText("");
   };
