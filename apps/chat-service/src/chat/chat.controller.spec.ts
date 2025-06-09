@@ -46,7 +46,11 @@ describe('ChatController', () => {
 
       const result = await controller.getRoomMessages(roomId, { user: { userId } });
       expect(service.getRoomMessages).toHaveBeenCalledWith(roomId, userId);
-      expect(result).toEqual(messages);
+      expect(result).toEqual({
+        success: true,
+        data: messages,
+        message: 'Messages retrieved successfully',
+      });
     });
 
     it('should log and throw error when service fails', async () => {
@@ -55,7 +59,7 @@ describe('ChatController', () => {
       service.getRoomMessages.mockRejectedValue(new Error('DB error'));
 
       await expect(controller.getRoomMessages(roomId, { user: { userId } }))
-        .rejects.toThrow('Failed to fetch messages');
+        .rejects.toThrow(); // Now handled by global filter, will throw the original error
     });
   });
 
@@ -67,7 +71,11 @@ describe('ChatController', () => {
 
       const result = await controller.getUserRooms({ user: { userId } });
       expect(service.getUserRooms).toHaveBeenCalledWith(userId);
-      expect(result).toEqual(rooms);
+      expect(result).toEqual({
+        success: true,
+        data: rooms,
+        message: 'Chat rooms retrieved successfully',
+      });
     });
 
     it('should log and throw error when service fails', async () => {
@@ -75,7 +83,7 @@ describe('ChatController', () => {
       service.getUserRooms.mockRejectedValue(new Error('DB error'));
 
       await expect(controller.getUserRooms({ user: { userId } }))
-        .rejects.toThrow('Failed to fetch user chat rooms');
+        .rejects.toThrow(); // Now handled by global filter, will throw the original error
     });
   });
 });

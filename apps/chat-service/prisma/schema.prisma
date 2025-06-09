@@ -17,7 +17,8 @@ model ChatRoom {
   id           String           @id @default(uuid())
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
-  
+  name         String?          // Optional room name (for group or 1:1, editable)
+
   messages     Message[]
   participants ChatParticipant[]
 }

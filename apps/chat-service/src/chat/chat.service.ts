@@ -7,12 +7,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { UserRestService } from '../external/user.rest.service';
 
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly userRestService: UserRestService,
+  ) {}
 
   async createMessage(createMessageDto: CreateMessageDto) {
     try {
@@ -79,7 +83,7 @@ export class ChatService {
       });
 
       // Create or update participant
-      return await this.prisma.chatParticipant.upsert({
+      const participant = await this.prisma.chatParticipant.upsert({
         where: {
           roomId_userId: { roomId, userId },
         },
@@ -92,6 +96,8 @@ export class ChatService {
           lastSeen: new Date(),
         },
       });
+      this.logger.debug(`User ${userId} joined room ${roomId}`);
+      return participant;
     } catch (error) {
       this.logger.error(`Error joining room: ${error.message}`, error.stack);
       throw new BadRequestException('Failed to join room');
@@ -104,6 +110,7 @@ export class ChatService {
         where: { roomId, userId },
         data: { lastSeen: new Date() },
       });
+      this.logger.debug(`User ${userId} left room ${roomId}`);
     } catch (error) {
       this.logger.error(`Error leaving room: ${error.message}`, error.stack);
       // Don't throw error on leave to prevent disconnection issues
@@ -170,6 +177,53 @@ export class ChatService {
     } catch (error) {
       this.logger.error('Failed to fetch user rooms', error);
       throw new BadRequestException('Failed to fetch user chat rooms');
+    }
+  }
+
+  async createRoom(participants: string[], authHeader: string) {
+    try {
+      let name: string | undefined = undefined;
+      if (participants.length > 1) {
+        // Assign random group name
+        name = `Group Chat ${Math.floor(1000 + Math.random() * 9000)}`;
+      } else if (participants.length === 1) {
+        // Fetch user profile from user service
+        try {
+          const profileRes = await this.userRestService.getUserProfile(
+            participants[0],
+            authHeader,
+          );
+          name = (profileRes?.data?.name || 'Chat').slice(0, 4);
+        } catch (e) {
+          this.logger.warn(
+            'Could not fetch user profile for chat room name',
+            e,
+          );
+          name = 'Chat';
+        }
+      }
+
+      const room = await this.prisma.chatRoom.create({
+        data: {
+          name,
+          participants: {
+            create: participants.map((userId) => ({
+              userId,
+            })),
+          },
+        },
+        include: {
+          participants: true,
+          messages: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      });
+      return room;
+    } catch (error) {
+      this.logger.error('Failed to create chat room', error);
+      throw new BadRequestException('Failed to create chat room');
     }
   }
 }

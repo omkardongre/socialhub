@@ -1,4 +1,13 @@
-import { Logger, Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import {
+  Logger,
+  Controller,
+  Get,
+  Param,
+  Req,
+  UseGuards,
+  Post,
+  Body,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -35,15 +44,15 @@ export class ChatController {
     @Param('id') roomId: string,
     @Req() req: { user: { userId: string } },
   ) {
-    try {
-      return await this.chatService.getRoomMessages(roomId, req.user.userId);
-    } catch (error) {
-      this.logger.error(
-        `Failed to get room messages: ${error.message}`,
-        error.stack,
-      );
-      throw new Error('Failed to fetch messages');
-    }
+    const messages = await this.chatService.getRoomMessages(
+      roomId,
+      req.user.userId,
+    );
+    return {
+      success: true,
+      data: messages,
+      message: 'Messages retrieved successfully',
+    };
   }
 
   @Get()
@@ -55,14 +64,37 @@ export class ChatController {
   })
   @ApiResponse({ status: 400, description: 'Failed to fetch user chat rooms' })
   async getUserRooms(@Req() req: { user: { userId: string } }) {
-    try {
-      return await this.chatService.getUserRooms(req.user.userId);
-    } catch (error) {
-      this.logger.error(
-        `Failed to get user rooms: ${error.message}`,
-        error.stack,
-      );
-      throw new Error('Failed to fetch user chat rooms');
-    }
+    const rooms = await this.chatService.getUserRooms(req.user.userId);
+    return {
+      success: true,
+      data: rooms,
+      message: 'Chat rooms retrieved successfully',
+    };
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create a new chat room' })
+  @ApiResponse({ status: 201, description: 'Chat room created successfully' })
+  @ApiResponse({ status: 400, description: 'Failed to create chat room' })
+  async createRoom(@Req() req, @Body() body: { participants?: string[] }) {
+    const authHeader =
+      req.headers['authorization'] ||
+      (req.cookies?.token ? `Bearer ${req.cookies.token}` : undefined);
+
+    // Always include the creator in the participants
+    const creatorId = req.user.userId;
+
+    const participants =
+      body.participants && body.participants.length > 0
+        ? Array.from(new Set([creatorId, ...body.participants]))
+        : [creatorId];
+
+    const room = await this.chatService.createRoom(participants, authHeader);
+    return {
+      success: true,
+      data: room,
+      message: 'Chat room created successfully',
+    };
   }
 }

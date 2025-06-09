@@ -1,17 +1,21 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Socket } from "socket.io-client";
+import { sendMessage } from "@/lib/chatSocket";
 
 export default function ChatInput({
-  onSend,
+  roomId,
+  socket,
 }: {
-  onSend: (text: string) => void;
+  roomId: string;
+  socket: Socket | undefined;
 }) {
   const [text, setText] = useState("");
 
-  const handleSubmit = () => {
+  const handleSend = () => {
     if (!text.trim()) return;
-    onSend(text);
+    sendMessage(socket, roomId, text);
     setText("");
   };
 
@@ -21,8 +25,11 @@ export default function ChatInput({
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Type a message..."
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSend();
+        }}
       />
-      <Button onClick={handleSubmit}>Send</Button>
+      <Button onClick={handleSend}>Send</Button>
     </div>
   );
 }
