@@ -11,6 +11,26 @@ import { CreateProfileDto } from './dto/create-profile.dto';
 
 @Injectable()
 export class ProfilesService {
+  async searchProfiles(query: string) {
+    // Search by name or email substring (case-insensitive)
+    const profiles = await this.prisma.profile.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { user: { email: { contains: query, mode: 'insensitive' } } },
+        ],
+      },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        avatarUrl: true,
+      },
+      take: 10,
+    });
+    return profiles;
+  }
+
   private readonly logger = new Logger(ProfilesService.name);
 
   constructor(private prisma: PrismaService) {}

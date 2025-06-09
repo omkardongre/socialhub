@@ -26,6 +26,33 @@ import { CreateProfileDto } from './dto/create-profile.dto';
 export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
+  @UseGuards(JwtAuthGuard)
+  @Get('search')
+  @ApiOperation({ summary: 'Search user profiles by name or email' })
+  @ApiResponse({ status: 200, description: 'Profiles found' })
+  async searchProfiles(@Req() req): Promise<any> {
+    const query = req.query.query as string;
+    if (!query || query.length < 2) {
+      return { success: true, data: [], message: 'Query too short' };
+    }
+
+    console.log('query params', query);
+
+    const profiles = await this.profilesService.searchProfiles(query);
+    console.log('profiles', profiles);
+
+    return {
+      success: true,
+      data: profiles.map((profile) => ({
+        id: profile.id,
+        userId: profile.userId,
+        name: profile.name,
+        avatarUrl: profile.avatarUrl,
+      })),
+      message: 'Profiles found',
+    };
+  }
+
   @Get('health')
   @ApiOperation({ summary: 'Health check for profile service' })
   @ApiResponse({ status: 200, description: 'Profile service is healthy' })

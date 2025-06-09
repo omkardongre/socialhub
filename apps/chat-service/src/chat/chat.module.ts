@@ -6,9 +6,11 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module';
 import { ChatController } from './chat.controller';
+import { UserRestService } from '../external/user.rest.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, HttpModule],
   controllers: [ChatController],
   providers: [
     ChatGateway,
@@ -16,6 +18,7 @@ import { ChatController } from './chat.controller';
     PrismaService,
     JwtService,
     ConfigService,
+    UserRestService,
   ],
 })
 export class ChatModule {}
