@@ -1,7 +1,7 @@
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 export default createProxyMiddleware({
-  target: "http://localhost:3005/notifications", // Notification Service
+  target: process.env.NOTIFICATION_SERVICE_URL, // Notification Service
   changeOrigin: true,
   pathRewrite: { "^/api/notifications": "" },
 });

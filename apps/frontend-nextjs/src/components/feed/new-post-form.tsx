@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/axios";
 import { toast } from "sonner";
@@ -48,6 +47,11 @@ export function NewPostForm() {
       setMedia(metaRes.data);
       toast.success("Media uploaded!");
     } catch (err) {
+      if (err instanceof Error) {
+        console.error("Upload failed:", err.message, err.stack);
+      } else {
+        console.error("Upload failed:", err);
+      }
       toast.error("Media upload failed");
       setMedia(null);
       setPreviewUrl(null);

@@ -1,7 +1,7 @@
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 export default createProxyMiddleware({
-  target: "http://localhost:3002/users",
+  target: process.env.USER_SERVICE_URL,
   changeOrigin: true,
   pathRewrite: { "^/api/users": "" },
 });

@@ -164,6 +164,22 @@ services:
     environment:
       - NODE_ENV=development
 
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./api-gateway/.env
+    depends_on:
+      - auth-service
+      - user-service
+      - post-service
+      - media-service
+      - notification-service
+      - chat-service
+
 # Volumes for persistent data
 volumes:
   postgres-data:

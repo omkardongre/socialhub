@@ -1,3 +1,5 @@
+import { Message } from "./message";
+
 export interface ChatRoom {
   id: string;
   createdAt: string;
@@ -7,5 +9,5 @@ export interface ChatRoom {
     userId: string;
     lastSeen: string;
   }>;
-  messages: Array<any>; // You can replace 'any' with a proper Message interface if available
+  messages: Array<Message>;
 }

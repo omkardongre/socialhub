@@ -1,7 +1,7 @@
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 export default createProxyMiddleware({
-  target: "http://localhost:3003/posts",
+  target: process.env.POST_SERVICE_URL,
   changeOrigin: true,
   pathRewrite: { "^/api/posts": "" },
 });

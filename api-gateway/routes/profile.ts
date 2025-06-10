@@ -1,7 +1,7 @@
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 export default createProxyMiddleware({
-  target: "http://localhost:3002/profile",
+  target: process.env.PROFILE_SERVICE_URL,
   changeOrigin: true,
   pathRewrite: { "^/api/profile": "" },
 });

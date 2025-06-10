@@ -57,6 +57,11 @@ export default function ChatInput({
       });
       handleSend(fileUrl);
     } catch (err) {
+      if (err instanceof Error) {
+        console.error("Upload failed:", err.message, err.stack);
+      } else {
+        console.error("Upload failed:", err);
+      }
       toast.error("Media upload failed");
     }
     setUploading(false);
