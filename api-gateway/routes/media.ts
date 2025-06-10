@@ -1,7 +1,7 @@
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 export default createProxyMiddleware({
-  target: "http://localhost:3010/chat-rooms", // Chat Service
+  target: "http://localhost:3004/media", // Media Service
   changeOrigin: true,
-  pathRewrite: { "^/api/chat-rooms": "" },
+  pathRewrite: { "^/api/media": "" },
 });

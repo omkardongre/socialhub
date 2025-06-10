@@ -9,7 +9,7 @@ import usersRouter from "./routes/users.js";
 import postsRouter from "./routes/posts.js";
 import notificationsRouter from "./routes/notifications.js";
 import chatRoomsRouter from "./routes/chat-rooms.js";
-
+import mediaRouter from "./routes/media.js";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 dotenv.config();
@@ -53,6 +53,7 @@ app.use("/api/users", usersRouter);
 app.use("/api/posts", postsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/chat-rooms", chatRoomsRouter);
+app.use("/api/media", mediaRouter);
 
 app.use(cookieParser());
 app.use(express.json());

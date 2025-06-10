@@ -1,4 +1,3 @@
-// /apps/fontend-nextjs/src/app/chat/page.tsx
 "use client";
 import { useEffect, useState } from "react";
 import ChatShell from "@/components/chat/ChatShell";
