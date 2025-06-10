@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import { cleanEnv, str } from "envalid";
 
 import authRouter from "./routes/auth.js";
 import profileRouter from "./routes/profile.js";
@@ -14,12 +15,26 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 
 dotenv.config();
 
+// Validate environment variables for production safety
+cleanEnv(process.env, {
+  PORT: str(),
+  CHAT_SERVICE_WS_URL: str(),
+  AUTH_SERVICE_URL: str(),
+  USER_SERVICE_URL: str(),
+  PROFILE_SERVICE_URL: str(),
+  POST_SERVICE_URL: str(),
+  NOTIFICATION_SERVICE_URL: str(),
+  CHAT_ROOMS_SERVICE_URL: str(),
+  MEDIA_SERVICE_URL: str(),
+  FRONTEND_URL: str(),
+});
+
 const app = express();
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 
 // --- WebSocket Proxy Middleware ---
 const wsProxy = createProxyMiddleware({
-  target: "http://localhost:3010",
+  target: process.env.CHAT_SERVICE_WS_URL,
   changeOrigin: true,
   ws: true,
   on: {
