@@ -22,19 +22,12 @@ export class PostsController {
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Body() createPostDto: CreatePostDto, @Req() req) {
-    const authHeader =
-      req.headers['authorization'] ||
-      (req.cookies?.token ? `Bearer ${req.cookies.token}` : undefined);
-
     const userId = req.user.userId;
 
-    const post = await this.postsService.create(
-      {
-        ...createPostDto,
-        userId,
-      },
-      authHeader,
-    );
+    const post = await this.postsService.create({
+      ...createPostDto,
+      userId,
+    });
     return {
       success: true,
       data: post,

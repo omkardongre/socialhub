@@ -9,7 +9,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { LikePostDto } from './dto/like-post.dto';
 import { UserRestService } from '../external/user/user.rest.service';
-import { MediaRestService } from '../external/media/media.rest.service';
 import { ClientProxy } from '@nestjs/microservices';
 import { createPostCreatedEvent } from '@libs/events';
 
@@ -18,15 +17,14 @@ export class PostsService {
   constructor(
     private prisma: PrismaService,
     private userRestService: UserRestService,
-    private mediaRestService: MediaRestService,
     @Inject('RABBITMQ_SERVICE') private rabbitmqClient: ClientProxy,
   ) {}
 
-  async create(createPostDto: CreatePostDto, authHeader: string) {
+  async create(createPostDto: CreatePostDto) {
     if (!createPostDto.userId) {
       throw new ConflictException('User ID is required');
     }
-    await this.userRestService.getUserProfile(createPostDto.userId, authHeader);
+    // await this.userRestService.getUserProfile(createPostDto.userId, authHeader);
 
     // If mediaId is provided, we'll try to associate it later
     // The association will fail if the media doesn't exist
@@ -35,28 +33,9 @@ export class PostsService {
       data: {
         userId: createPostDto.userId,
         content: createPostDto.content,
-        mediaUrl: undefined,
+        mediaUrl: createPostDto.mediaUrl,
       },
     });
-
-    if (createPostDto.mediaId) {
-      const media = await this.mediaRestService.associateMediaToPost(
-        createPostDto.mediaId,
-        post.id,
-      );
-
-      if (!media?.url) {
-        throw new Error('Failed to get media URL from media service');
-      }
-
-      await this.prisma.post.update({
-        where: { id: post.id },
-        data: { mediaUrl: media.url },
-      });
-
-      // Update the post object with the new media URL
-      post.mediaUrl = media.url;
-    }
 
     // Emit post_created event
     const postEvent = createPostCreatedEvent({

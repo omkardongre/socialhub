@@ -13,5 +13,6 @@ model Media {
   type      String
   size      Int
   postId    String?
+  chatMessageId String?
   createdAt DateTime @default(now())
 }

@@ -20,8 +20,4 @@ export class CreatePostDto {
   @IsOptional()
   @IsString()
   mediaUrl?: string;
-
-  @IsOptional()
-  @IsString()
-  mediaId?: string;
 }
