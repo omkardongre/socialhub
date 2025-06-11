@@ -90,7 +90,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'Current user profile' })
   getProfile(@Req() req: JwtRequest) {
-    return req.user;
+    return {
+      success: true,
+      data: { user: req.user },
+      message: 'Current user profile',
+    };
   }
 
   @Post('refresh')

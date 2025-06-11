@@ -5,13 +5,13 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy package.json and package-lock.json
-COPY package*.json ./
+COPY api-gateway/package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy the rest of the source code
-COPY . .
+COPY api-gateway/ .
 
 # Build the TypeScript code (if using tsc)
 RUN npm run build
