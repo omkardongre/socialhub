@@ -62,7 +62,7 @@ export class ProfilesService {
 
   async updateProfile(
     userId: string,
-    data: { bio?: string; avatarUrl?: string },
+    data: { name?: string; bio?: string; avatarUrl?: string },
   ) {
     try {
       const updatedProfile = await this.prisma.profile.update({

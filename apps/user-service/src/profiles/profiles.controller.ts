@@ -99,6 +99,7 @@ export class ProfilesController {
   @ApiBody({
     schema: {
       properties: {
+        name: { type: 'string', example: 'John Doe' },
         bio: { type: 'string', example: 'About me' },
         avatarUrl: {
           type: 'string',
@@ -110,7 +111,7 @@ export class ProfilesController {
   @UseGuards(JwtAuthGuard)
   async updateProfile(
     @Req() req,
-    @Body() body: { bio?: string; avatarUrl?: string },
+    @Body() body: { name?: string; bio?: string; avatarUrl?: string },
   ) {
     const userId = req.user.userId;
     const updatedProfile = await this.profilesService.updateProfile(
