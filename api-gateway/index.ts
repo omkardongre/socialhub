@@ -29,6 +29,14 @@ cleanEnv(process.env, {
   FRONTEND_URL: str(),
 });
 
+// --- Simple industry-style logger ---
+function log(level: 'INFO' | 'ERROR' | 'WARN' | 'DEBUG', message: string, meta: Record<string, any> = {}) {
+  const timestamp = new Date().toISOString();
+  const metaString = Object.keys(meta).length ? ` | meta: ${JSON.stringify(meta)}` : '';
+  // eslint-disable-next-line no-console
+  console.log(`[${timestamp}] [${level}] ${message}${metaString}`);
+}
+
 const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 
@@ -40,21 +48,17 @@ const wsProxy = createProxyMiddleware({
   on: {
     proxyReq: (proxyReq, req, res) => {
       if (req.url && req.url.startsWith("/chat")) {
-        console.log(
-          `[GATEWAY][Proxy] HTTP request to /chat:`,
-          req.method,
-          req.url
-        );
+        log('INFO', 'Proxy HTTP request to /chat', { method: req.method, url: req.url });
       }
     },
     proxyReqWs: (proxyReq, req, socket) => {
-      console.log(`[GATEWAY][WebSocket] Upgrade request for:`, req.url);
+      log('INFO', 'WebSocket upgrade request', { url: req.url });
       socket.on("error", (error) => {
-        console.error(`[GATEWAY][WebSocket] Socket error:`, error.message);
+        log('ERROR', 'WebSocket socket error', { error: error.message, url: req.url });
       });
     },
     error: (err, req, res) => {
-      console.error(`[GATEWAY][Proxy Error]`, err.message, `on`, req.url);
+      log('ERROR', 'Proxy error', { error: err.message, url: req.url });
     },
   },
 });
@@ -73,6 +77,12 @@ app.use("/api/media", mediaRouter);
 app.use(cookieParser());
 app.use(express.json());
 
+// --- Request logging middleware ---
+app.use((req, res, next) => {
+  log('INFO', 'Incoming HTTP request', { method: req.method, url: req.originalUrl });
+  next();
+});
+
 // --- Dummy endpoint for testing ---
 app.get("/api/test", (req, res) => {
   res.json({
@@ -84,7 +94,7 @@ app.get("/api/test", (req, res) => {
 // --- Start server and attach WebSocket upgrade handler ---
 const PORT = process.env.PORT || 8082;
 const server = app.listen(PORT, () => {
-  console.log(`[STARTUP] API Gateway listening on port ${PORT}`);
+  log('INFO', 'API Gateway listening', { port: PORT });
 });
 
 // Attach WebSocket upgrade event for proper proxying

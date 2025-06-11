@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { api } from "./axios";
 
 export async function requireAuth() {
   const cookieStore = await cookies();
@@ -9,15 +10,18 @@ export async function requireAuth() {
   }
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
-      headers: { Cookie: `token=${token}` },
-      credentials: "include",
-      cache: "no-store",
-    });
-    if (!res.ok) {
+    const res = await api.get(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
+      {
+        headers: { Cookie: `token=${token}` },
+        withCredentials: true,
+      }
+    );
+
+    if (!res.data.success) {
       return { user: null, redirect: true };
     }
-    const user = await res.json();
+    const user = res.data.data.user;
     return { user, redirect: false };
   } catch {
     return { user: null, redirect: true };

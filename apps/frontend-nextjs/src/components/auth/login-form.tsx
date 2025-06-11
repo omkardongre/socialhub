@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -13,10 +14,12 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
+  const { refresh } = useAuth();
 
   const login = useMutation({
     mutationFn: async () => api.post("/auth/login", { email, password }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await refresh();
       toast.success("Login successful! Redirecting...");
       setTimeout(() => router.push("/feed"), 1000);
     },

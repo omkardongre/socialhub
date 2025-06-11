@@ -19,7 +19,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({
 
   const handleCreate = () => {
     if (selected.length > 0) {
-      onCreate(selected.map((u) => u.id));
+      onCreate(selected.map((u) => u.userId));
       setSelected([]);
     }
   };

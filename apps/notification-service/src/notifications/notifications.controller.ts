@@ -84,7 +84,6 @@ export class NotificationsController {
 
   @Get('test-queue')
   async testQueue() {
-    console.log('test-queue');
     await this.notificationsService.enqueueNotification({
       userEmail: 'omkardongre5@gmail.com',
       type: 'USER_FOLLOWED',

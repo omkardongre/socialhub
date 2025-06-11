@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,27 +12,37 @@ interface UserSearchInputProps {
   setSelected: (users: User[]) => void;
 }
 
-export const UserSearchInput: React.FC<UserSearchInputProps> = ({ selected, setSelected }) => {
+export const UserSearchInput: React.FC<UserSearchInputProps> = ({
+  selected,
+  setSelected,
+}) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const debouncedQuery = useDebouncedValue(query, 400);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!debouncedQuery) {
       setResults([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    api
-      .get(`/profile/search?query=${encodeURIComponent(debouncedQuery)}`)
-      .then((res) => {
+    (async () => {
+      try {
+        const res = await api.get(
+          `/profile/search?query=${encodeURIComponent(debouncedQuery)}`
+        );
         const data = res.data;
         setResults(data.data || []);
-      })
-      .catch(() => setResults([]))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        // Log errors for monitoring and debugging
+        console.error("[UserSearchInput] Error fetching search results:", err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [debouncedQuery]);
 
   const addUser = (user: User) => {
@@ -75,7 +85,10 @@ export const UserSearchInput: React.FC<UserSearchInputProps> = ({ selected, setS
                 />
               )}
               <span>
-                {user.name} <span className="text-xs text-gray-400 ml-2">({user.userId})</span>
+                {user.name}{" "}
+                <span className="text-xs text-gray-400 ml-2">
+                  ({user.userId})
+                </span>
               </span>
             </li>
           ))}
@@ -83,7 +96,11 @@ export const UserSearchInput: React.FC<UserSearchInputProps> = ({ selected, setS
       )}
       <div className="flex flex-wrap gap-2 mb-4">
         {selected.map((user) => (
-          <Badge key={user.id} variant="secondary" className="flex items-center">
+          <Badge
+            key={user.id}
+            variant="secondary"
+            className="flex items-center"
+          >
             {user.name}
             <Button
               type="button"

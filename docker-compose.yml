@@ -161,8 +161,8 @@ services:
       dockerfile: ./apps/frontend-nextjs/Dockerfile
     ports:
       - "3007:3000"
-    environment:
-      - NODE_ENV=development
+    env_file:
+      - ./apps/frontend-nextjs/.env
 
   api-gateway:
     build:

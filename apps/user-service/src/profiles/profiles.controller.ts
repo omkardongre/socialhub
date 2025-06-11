@@ -27,6 +27,22 @@ export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
   @UseGuards(JwtAuthGuard)
+  @Get('me')
+  @ApiOperation({ summary: "Get current user's profile" })
+  @ApiResponse({ status: 200, description: 'Current user profile' })
+  @ApiResponse({ status: 404, description: 'Profile not found' })
+  async getMyProfile(@Req() req) {
+    const userId = req.user.userId;
+    const profile = await this.profilesService.getProfileByUserId(userId);
+    if (!profile) throw new NotFoundException('Profile not found');
+    return {
+      success: true,
+      data: profile,
+      message: 'Current user profile',
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('search')
   @ApiOperation({ summary: 'Search user profiles by name or email' })
   @ApiResponse({ status: 200, description: 'Profiles found' })
@@ -36,10 +52,7 @@ export class ProfilesController {
       return { success: true, data: [], message: 'Query too short' };
     }
 
-    console.log('query params', query);
-
     const profiles = await this.profilesService.searchProfiles(query);
-    console.log('profiles', profiles);
 
     return {
       success: true,

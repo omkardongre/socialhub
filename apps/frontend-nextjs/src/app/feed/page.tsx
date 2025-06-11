@@ -5,6 +5,7 @@ import { FeedList } from "@/components/feed/feed-list";
 
 export default async function FeedPage() {
   const { redirect: shouldRedirect } = await requireAuth();
+
   if (shouldRedirect) redirect("/auth/login");
 
   return (

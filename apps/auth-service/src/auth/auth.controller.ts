@@ -90,7 +90,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'Current user profile' })
   getProfile(@Req() req: JwtRequest) {
-    return req.user;
+    return {
+      success: true,
+      data: { user: req.user },
+      message: 'Current user profile',
+    };
   }
 
   @Post('refresh')
@@ -145,5 +149,22 @@ export class AuthController {
         </html>
       `);
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(@Req() req: JwtRequest, @Res() res: Response) {
+    const userId = req.user.userId;
+    await this.prisma.session.deleteMany({
+      where: { userId },
+    });
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    return res.json({ success: true, message: 'Logged out' });
   }
 }

@@ -32,7 +32,11 @@ export default function MessageList({ roomId, userId }: MessageListProps) {
               }`}
             >
               <CardContent className="p-3 flex flex-col gap-2">
-                <div className={`text-xs font-medium mb-1 ${isMe ? "text-white/80" : "text-gray-500"}`}>
+                <div
+                  className={`text-xs font-medium mb-1 ${
+                    isMe ? "text-white/80" : "text-gray-500"
+                  }`}
+                >
                   {isMe ? "You" : msg.senderId}
                   <span className="ml-2 text-[10px] text-gray-400">
                     {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -42,7 +46,11 @@ export default function MessageList({ roomId, userId }: MessageListProps) {
                   </span>
                 </div>
                 {msg.mediaUrl && (
-                  <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={msg.mediaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <div className="relative w-full max-w-[320px] aspect-video mb-2 bg-white border rounded-md overflow-hidden">
                       <Image
                         src={msg.mediaUrl}

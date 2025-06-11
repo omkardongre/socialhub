@@ -7,8 +7,8 @@ declare -A DBS=(
   [user_service]="user_db:admin:admin123:localhost:5432"
   [post_service]="post_db:admin:admin123:localhost:5432"
   [notification_service]="notification_db:admin:admin123:localhost:5432"
-#   [media_service]="media_db:admin:admin123:localhost:5432"
-#   [chat_service]="chat_db:admin:admin123:localhost:5432"
+  [media_service]="media_db:admin:admin123:localhost:5432"
+  [chat_service]="chat_db:admin:admin123:localhost:5432"
 )
 
 for service in "${!DBS[@]}"; do
