@@ -150,4 +150,21 @@ export class AuthController {
       `);
     }
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(@Req() req: JwtRequest, @Res() res: Response) {
+    const userId = req.user.userId;
+    await this.prisma.session.deleteMany({
+      where: { userId },
+    });
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    return res.json({ success: true, message: 'Logged out' });
+  }
 }
