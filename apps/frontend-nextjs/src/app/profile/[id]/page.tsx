@@ -43,5 +43,6 @@ export default async function ProfilePage({
       </div>
     );
 
+  // Hydrate user for client (edit mode needs client-side state)
   return <UserProfile user={data} />;
 }
