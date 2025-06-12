@@ -8,6 +8,8 @@ import MessageList from "@/components/chat/MessageList";
 import { useAuth } from "@/context/AuthContext";
 import ChatInput from "@/components/chat/ChatInput";
 import { useReceiveMessage } from "@/hooks/useReceiveMessage";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ChatClient() {
   const searchParams = useSearchParams();
@@ -21,21 +23,31 @@ export default function ChatClient() {
 
   if (!roomId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-        <div className="text-lg font-medium">
-          Select a chat to start messaging
-        </div>
-        <p className="text-sm mt-2">or create a new one</p>
-      </div>
+      <Card className="flex flex-col items-center justify-center h-full w-full">
+        <CardHeader>
+          <CardTitle>Select a chat to start messaging</CardTitle>
+          <CardDescription>or create a new one</CardDescription>
+        </CardHeader>
+      </Card>
     );
   }
 
   if (userLoading) {
-    return <div className="flex items-center justify-center h-full">Loading user...</div>;
+    return (
+      <div className="flex items-center justify-center h-full w-full">
+        <Skeleton className="h-10 w-48" />
+      </div>
+    );
   }
 
   if (!user) {
-    return <div className="flex items-center justify-center h-full">Please login to use chat.</div>;
+    return (
+      <Card className="flex items-center justify-center h-full w-full">
+        <CardHeader>
+          <CardTitle>Please login to use chat.</CardTitle>
+        </CardHeader>
+      </Card>
+    );
   }
 
   return (

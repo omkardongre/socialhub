@@ -6,7 +6,15 @@ import { useAuth } from "@/context/AuthContext";
 
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationBell from "./NotificationBell";
+import { DarkModeToggle } from "./DarkModeToggle";
 import Image from "next/image";
+import { Card } from "@/components/ui/card";
+import {
+  NavigationMenu,
+  NavigationMenuList,
+  NavigationMenuItem,
+  NavigationMenuLink,
+} from "@/components/ui/navigation-menu";
 
 export default function Navbar() {
   const { user } = useAuth();
@@ -15,41 +23,57 @@ export default function Navbar() {
   if (!user) return null;
 
   return (
-    <nav className="w-full bg-white border-b shadow-sm px-4 py-2 flex items-center justify-between">
-      {/* Left: Logo and App Name */}
-      <div className="flex items-center gap-6">
-        <Link href="/feed" className="flex items-center gap-2 select-none">
-          <span className="inline-block w-8 h-8">
-            <Image src="/logo.svg" alt="SocialHub Logo" className="w-8 h-8" width={24} height={24}/>
-          </span>
-          <span className="font-bold text-xl tracking-tight text-blue-600">SocialHub</span>
-        </Link>
-        {/* Center: Nav links */}
-        <div className="hidden md:flex items-center gap-4 ml-6">
-          <Link
-            href="/feed"
-            className={`font-medium text-base px-2 py-1 rounded hover:bg-blue-50 ${pathname === "/feed" ? "text-blue-600" : "text-gray-900"}`}
-          >
-            Feed
+    <Card
+      asChild
+      className="w-full rounded-none border-b shadow-sm px-0 py-0 bg-background text-foreground"
+    >
+      <nav className="w-full px-4 py-2 flex items-center justify-between">
+        {/* Left: Logo and App Name */}
+        <div className="flex items-center gap-6">
+          <Link href="/feed" className="flex items-center gap-2 select-none">
+            <span className="inline-block w-8 h-8">
+              <Image
+                src="/logo.svg"
+                alt="SocialHub Logo"
+                className="w-8 h-8"
+                width={24}
+                height={24}
+              />
+            </span>
+            <span className="font-bold text-xl tracking-tight text-foreground">
+              SocialHub
+            </span>
           </Link>
-          <Link
-            href="/chat"
-            className={`font-medium text-base px-2 py-1 rounded hover:bg-blue-50 ${pathname.startsWith("/chat") ? "text-blue-600" : "text-gray-900"}`}
-          >
-            Chat
-          </Link>
-          <Link
-            href="/explore"
-            className={`font-medium text-base px-2 py-1 rounded hover:bg-blue-50 ${pathname === "/explore" ? "text-blue-600" : "text-gray-900"}`}
-          >
-            Discover
-          </Link>
+          {/* Center: Nav links */}
+          <NavigationMenu className="hidden md:flex items-center gap-4 ml-6 bg-transparent">
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild active={pathname === "/feed"}>
+                  <Link href="/feed">Feed</Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  asChild
+                  active={pathname.startsWith("/chat")}
+                >
+                  <Link href="/chat">Chat</Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild active={pathname === "/explore"}>
+                  <Link href="/explore">Discover</Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
         </div>
-      </div>
-      <div className="flex items-center gap-4">
-        <NotificationBell />
-        <ProfileDropdown />
-      </div>
-    </nav>
+        <div className="flex items-center gap-4">
+          <DarkModeToggle />
+          <NotificationBell />
+          <ProfileDropdown />
+        </div>
+      </nav>
+    </Card>
   );
 }

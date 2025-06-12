@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { User } from "@/types/profile";
 import { UserSearchInput } from "./UserSearchInput";
 
@@ -29,7 +30,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({
       <DialogContent className="max-w-md">
         <DialogTitle>Start New Chat</DialogTitle>
         <div className="mb-4">
-          <label className="block mb-2 text-sm">Add participants</label>
+          <Label className="block mb-2">Add participants</Label>
           <UserSearchInput selected={selected} setSelected={setSelected} />
         </div>
         <Button

@@ -3,6 +3,8 @@ import { useMessages } from "@/hooks/useMessages";
 import { Message } from "@/types/message";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface MessageListProps {
   roomId: string;
@@ -12,8 +14,23 @@ interface MessageListProps {
 export default function MessageList({ roomId, userId }: MessageListProps) {
   const { data: messages = [], isLoading, error } = useMessages(roomId);
 
-  if (isLoading) return <div>Loading messages...</div>;
-  if (error) return <div className="text-red-500">Error loading messages</div>;
+  if (isLoading)
+    return (
+      <div className="p-4">
+        <Skeleton className="h-20 w-full mb-2" />
+        <Skeleton className="h-20 w-3/4 mb-2" />
+        <Skeleton className="h-16 w-2/3" />
+      </div>
+    );
+  if (error)
+    return (
+      <Alert variant="destructive" className="my-4">
+        <AlertTitle>Error loading messages</AlertTitle>
+        <AlertDescription>
+          There was a problem fetching chat messages. Please try again later.
+        </AlertDescription>
+      </Alert>
+    );
 
   return (
     <div className="flex flex-col gap-2 p-2 overflow-y-auto h-full">

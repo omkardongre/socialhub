@@ -5,6 +5,7 @@ import { PostCard } from "./post-card";
 import { api } from "@/lib/axios";
 import { Post } from "@/types/post";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function FeedList() {
   const { data, isLoading } = useQuery({
@@ -16,11 +17,13 @@ export function FeedList() {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((_, idx) => (
-          <div key={idx} className="bg-white rounded-2xl shadow p-4 space-y-2">
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-5 w-full" />
-            <Skeleton className="h-5 w-3/4" />
-          </div>
+          <Card key={idx}>
+            <CardContent className="space-y-2">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-3/4" />
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
