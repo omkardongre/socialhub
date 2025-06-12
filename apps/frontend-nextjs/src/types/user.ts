@@ -1,1 +1,10 @@
-// TODO: Update user types for profile/follow system
+export interface User {
+  id: string;
+  userId: string;
+  name: string;
+  bio: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  isFollowing: boolean;
+}
