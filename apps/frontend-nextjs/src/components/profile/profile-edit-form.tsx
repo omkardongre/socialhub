@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -172,8 +173,18 @@ export function ProfileEditForm({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Bio</label>
+            <Label className="block mb-1" htmlFor="profile-edit-name">Name</Label>
+            <Input
+              id="profile-edit-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+            />
+          </div>
+          <div>
+            <Label className="block mb-1" htmlFor="profile-edit-bio">Bio</Label>
             <Textarea
+              id="profile-edit-bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell us about yourself..."

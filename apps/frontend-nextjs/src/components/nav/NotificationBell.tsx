@@ -3,6 +3,7 @@ import React from "react";
 import { Bell, XCircle } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,8 +51,10 @@ export default function NotificationBell() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
           aria-label="Show notifications"
         >
           <Bell className="w-6 h-6 text-gray-700" />
@@ -60,7 +63,7 @@ export default function NotificationBell() {
               {unreadCount}
             </Badge>
           )}
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 max-w-xs p-0">
         <DropdownMenuLabel className="flex items-center justify-between px-4 py-2 font-semibold">

@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Label } from "@/components/ui/label";
 import type { Notification } from "@/types/notification";
 
 export function NotificationsList() {
@@ -44,9 +45,9 @@ export function NotificationsList() {
           checked={filterUnread}
           onCheckedChange={(val) => setFilterUnread(!!val)}
         />
-        <label htmlFor="unread-filter" className="text-sm">
+        <Label htmlFor="unread-filter">
           Show only unread
-        </label>
+        </Label>
       </div>
 
       {isLoading ? (
