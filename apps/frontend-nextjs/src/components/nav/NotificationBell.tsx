@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Bell, CheckCircle, XCircle } from "lucide-react";
+import { Bell, XCircle } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,13 +37,15 @@ export default function NotificationBell() {
       const res = await api.get(
         `/notifications?receiverId=${user.userId}&limit=10`
       );
-      return res.data?.data?.notifications || [];
+
+      return res.data.data || [];
     },
     enabled: !!user?.userId,
     refetchInterval: 30000, // Poll every 30s for new notifications
   });
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const unreadCount = unreadNotifications.length;
 
   return (
     <DropdownMenu>
@@ -71,9 +73,9 @@ export default function NotificationBell() {
           </Link>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {notifications.length === 0 && !isLoading && (
+        {unreadNotifications.length === 0 && !isLoading && (
           <DropdownMenuItem disabled className="text-center text-gray-500 py-4">
-            No notifications
+            No unread notifications
           </DropdownMenuItem>
         )}
         {isLoading && (
@@ -81,18 +83,12 @@ export default function NotificationBell() {
             Loading...
           </DropdownMenuItem>
         )}
-        {notifications.map((n) => (
+        {unreadNotifications.map((n) => (
           <DropdownMenuItem
             key={n.id}
-            className={`flex items-center gap-2 ${
-              n.isRead ? "bg-gray-50" : "bg-blue-50"
-            }`}
+            className={`flex items-center gap-2 bg-blue-50`}
           >
-            {n.isRead ? (
-              <CheckCircle className="w-4 h-4 text-green-400" />
-            ) : (
-              <XCircle className="w-4 h-4 text-blue-400" />
-            )}
+            <XCircle className="w-4 h-4 text-blue-400" />
             <span className="text-sm text-gray-800 flex-1">{n.content}</span>
           </DropdownMenuItem>
         ))}
