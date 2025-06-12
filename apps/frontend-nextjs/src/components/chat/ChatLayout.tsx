@@ -1,4 +1,5 @@
 import React from "react";
+import { Separator } from "@/components/ui/separator";
 
 export default function ChatLayout({
   sidebar,
@@ -9,8 +10,13 @@ export default function ChatLayout({
 }) {
   return (
     <div className="flex h-screen overflow-hidden">
-      <div className="w-1/4 border-r p-4">{sidebar}</div>
-      <div className="flex-1 flex flex-col p-4">{chatWindow}</div>
+      <div className="w-1/4 p-4">
+        {sidebar}
+      </div>
+      <Separator orientation="vertical" className="mx-0" />
+      <div className="flex-1 flex flex-col p-4">
+        {chatWindow}
+      </div>
     </div>
   );
 }
