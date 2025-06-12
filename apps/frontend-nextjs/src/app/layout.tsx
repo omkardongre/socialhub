@@ -32,8 +32,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <Navbar />
-          <ReactQueryProvider>{children}</ReactQueryProvider>
+          <ReactQueryProvider>
+            <Navbar />
+            {children}
+          </ReactQueryProvider>
           <Toaster />
         </AuthProvider>
       </body>
