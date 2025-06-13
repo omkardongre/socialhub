@@ -2,6 +2,7 @@ import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { S3 } from 'aws-sdk';
 import { v4 as uuid } from 'uuid';
 import { UploadService } from './upload.service';
+import { env } from '../env';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('media')
@@ -12,10 +13,10 @@ export class UploadController {
   @Post('upload-url')
   async getUploadUrl(@Req() req, @Body('fileType') fileType: string) {
     const s3 = new S3({
-      region: process.env.S3_REGION,
+      region: env.S3_REGION,
       credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY!,
-        secretAccessKey: process.env.S3_SECRET_KEY!,
+        accessKeyId: env.S3_ACCESS_KEY,
+        secretAccessKey: env.S3_SECRET_KEY,
       },
       signatureVersion: 'v4',
     });
@@ -24,7 +25,7 @@ export class UploadController {
     const fileKey = `${uuid()}.${fileType.split('/')[1]}`;
 
     const uploadUrl = await s3.getSignedUrlPromise('putObject', {
-      Bucket: process.env.S3_BUCKET_NAME!,
+      Bucket: env.S3_BUCKET_NAME,
       Key: fileKey,
       ContentType: fileType,
       Expires: 60,
@@ -34,7 +35,7 @@ export class UploadController {
       success: true,
       data: {
         uploadUrl,
-        fileUrl: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/${fileKey}`,
+        fileUrl: `https://${env.S3_BUCKET_NAME}.s3.${env.S3_REGION}.amazonaws.com/${fileKey}`,
       },
       message: 'Upload URL generated successfully',
     };

@@ -4,11 +4,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { ChatExceptionFilter } from './common/filters/http-exception.filter';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
+import { env } from './env';
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
@@ -21,7 +21,7 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new ChatExceptionFilter());
 
-  await app.listen(process.env.PORT || 3010);
-  console.log(`Application is running on ${process.env.PORT}`);
+  await app.listen(env.PORT);
+  console.log(`Application is running on ${env.PORT}`);
 }
 bootstrap();

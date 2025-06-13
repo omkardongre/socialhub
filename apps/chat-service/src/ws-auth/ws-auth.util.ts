@@ -1,13 +1,9 @@
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
-import { ConfigService } from '@nestjs/config';
 import * as cookie from 'cookie';
+import { env } from '../env';
 
-export async function verifyWsClientToken(
-  client: any,
-  jwtService: JwtService,
-  configService: ConfigService,
-) {
+export async function verifyWsClientToken(client: any, jwtService: JwtService) {
   const token = extractTokenFromClient(client);
 
   if (!token) {
@@ -16,7 +12,7 @@ export async function verifyWsClientToken(
 
   try {
     const payload = await jwtService.verifyAsync(token, {
-      secret: configService.get<string>('JWT_SECRET'),
+      secret: env.JWT_SECRET,
     });
 
     return payload;

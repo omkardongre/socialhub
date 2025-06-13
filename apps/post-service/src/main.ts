@@ -4,6 +4,7 @@ import { AuthExceptionFilter } from './common/filters/http-exception.filter';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
+import { env } from './env';
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
@@ -24,6 +25,6 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AuthExceptionFilter());
   app.useGlobalPipes(new ValidationPipe());
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(env.PORT);
 }
 bootstrap();
