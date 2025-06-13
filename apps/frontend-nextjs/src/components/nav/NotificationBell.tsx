@@ -59,7 +59,7 @@ export default function NotificationBell() {
         >
           <Bell className="w-6 h-6 text-gray-700" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 bg-red-500 text-white px-1.5 py-0.5 min-w-[18px] text-xs border border-white">
+            <Badge className="absolute -top-1 -right-1 bg-red-700 dark:bg-red-400 text-white px-1.5 py-0.5 min-w-[18px] text-xs border border-white">
               {unreadCount}
             </Badge>
           )}

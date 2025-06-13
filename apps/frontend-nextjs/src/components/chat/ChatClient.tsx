@@ -8,7 +8,12 @@ import MessageList from "@/components/chat/MessageList";
 import { useAuth } from "@/context/AuthContext";
 import ChatInput from "@/components/chat/ChatInput";
 import { useReceiveMessage } from "@/hooks/useReceiveMessage";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ChatClient() {
@@ -24,9 +29,13 @@ export default function ChatClient() {
   if (!roomId) {
     return (
       <Card className="flex flex-col items-center justify-center h-full w-full">
-        <CardHeader>
-          <CardTitle>Select a chat to start messaging</CardTitle>
-          <CardDescription>or create a new one</CardDescription>
+        <CardHeader className="w-full text-center">
+          <CardTitle className="w-full text-center">
+            Select a chat to start messaging
+          </CardTitle>
+          <CardDescription className="w-full text-center">
+            or create a new one
+          </CardDescription>
         </CardHeader>
       </Card>
     );
