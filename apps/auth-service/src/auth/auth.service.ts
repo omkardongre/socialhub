@@ -19,6 +19,7 @@ import { UserRestService } from '../external/user/user.rest.service';
 import { NotificationRestService } from '../external/notification/notification.rest.service';
 import { Session, User } from '@prisma/client';
 import { SendGridService } from 'src/sendgrid/sendgrid.service';
+import { env } from '../env';
 
 @Injectable()
 export class AuthService {
@@ -138,7 +139,7 @@ export class AuthService {
         refreshToken = await this.jwtService.signAsync(
           { sub: user.id },
           {
-            secret: process.env.JWT_REFRESH_SECRET,
+            secret: env.JWT_REFRESH_SECRET,
             expiresIn: '7d',
           },
         );
@@ -267,7 +268,7 @@ export class AuthService {
     let payload: any;
     try {
       payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: env.JWT_REFRESH_SECRET,
       });
     } catch {
       throw new ForbiddenException('Invalid refresh token');
@@ -316,7 +317,7 @@ export class AuthService {
   private async generateAccessToken(user: User) {
     return this.jwtService.signAsync(
       { sub: user.id, email: user.email },
-      { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
+      { expiresIn: env.JWT_EXPIRES_IN || '1h' },
     );
   }
 

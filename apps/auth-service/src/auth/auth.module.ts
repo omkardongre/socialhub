@@ -8,18 +8,17 @@ import { UserRestService } from '../external/user/user.rest.service';
 import { HttpModule } from '@nestjs/axios';
 import { NotificationRestService } from '../external/notification/notification.rest.service';
 import { SendGridModule } from '../sendgrid/sendgrid.module';
-import { ConfigModule } from '@nestjs/config';
+import { env } from '../env';
 
 @Module({
   imports: [
     HttpModule,
     PrismaModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN },
+      secret: env.JWT_SECRET,
+      signOptions: { expiresIn: env.JWT_EXPIRES_IN },
     }),
     SendGridModule,
-    ConfigModule,
   ],
   controllers: [AuthController],
   providers: [
