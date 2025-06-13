@@ -1,8 +1,14 @@
 "use client";
 import { useState } from "react";
 import ChatSidebar from "./ChatSidebar";
-import ChatClient from "./ChatClient";
+import dynamic from "next/dynamic";
 import ChatLayout from "./ChatLayout";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const ChatClient = dynamic(() => import("./ChatClient"), {
+  loading: () => <Skeleton className="h-full w-full" />,
+  ssr: false,
+});
 import { ChatRoom } from "@/types/chat";
 
 export default function ChatShell({

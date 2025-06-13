@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 
@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/axios";
 
@@ -31,7 +31,11 @@ export default function ProfileDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2" aria-label="Open profile menu">
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2"
+          aria-label="Open profile menu"
+        >
           <Avatar>
             <Image
               src={user.avatarUrl || "/default-avatar.png"}

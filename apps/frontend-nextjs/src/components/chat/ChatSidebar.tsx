@@ -7,7 +7,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChatRoom } from "@/types/chat";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import NewChatModal from "./NewChatModal";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+const NewChatModal = dynamic(() => import("./NewChatModal"), {
+  loading: () => <Skeleton className="h-64 w-full" />,
+  ssr: false,
+});
 import { api } from "@/lib/axios";
 
 export default function ChatSidebar({

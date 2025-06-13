@@ -5,7 +5,12 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 import ProfileDropdown from "./ProfileDropdown";
-import NotificationBell from "./NotificationBell";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+const NotificationBell = dynamic(() => import("./NotificationBell"), {
+  loading: () => <Skeleton className="h-8 w-8 rounded-full" />,
+  ssr: false,
+});
 import { DarkModeToggle } from "./DarkModeToggle";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
@@ -24,7 +29,6 @@ export default function Navbar() {
 
   return (
     <Card
-      asChild
       className="w-full rounded-none border-b shadow-sm px-0 py-0 bg-background text-foreground"
     >
       <nav className="w-full px-4 py-2 flex items-center justify-between">
