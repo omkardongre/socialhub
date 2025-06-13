@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
-import { ConfigService } from '@nestjs/config';
+import { env } from '../env';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -37,7 +37,6 @@ export class AuthController {
     private authService: AuthService,
     private jwtService: JwtService,
     private prisma: PrismaService,
-    private configService: ConfigService,
   ) {}
 
   @Get('health')
@@ -126,7 +125,7 @@ export class AuthController {
     try {
       const result = await this.authService.verifyEmail(token);
       // Show a simple HTML page on success
-      const loginUrl = this.configService.get<string>('SIGNUP_SUCCESS_URL');
+      const loginUrl = env.SIGNUP_SUCCESS_URL;
       return res.status(200).send(`
         <html>
           <head><title>Email Verified</title></head>

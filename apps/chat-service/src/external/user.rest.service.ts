@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
+import { env } from '../env';
 
 @Injectable()
 export class UserRestService {
-  private readonly userServiceBaseUrl = process.env.USER_SERVICE_URL;
+  private readonly userServiceBaseUrl = env.USER_SERVICE_URL;
 
   constructor(private readonly http: HttpService) {}
 

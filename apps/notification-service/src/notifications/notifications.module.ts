@@ -4,24 +4,19 @@ import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationProcessor } from './notification.processor';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { env } from '../env';
 import { SendGridModule } from '../sendgrid/sendgrid.module';
 
 @Module({
   imports: [
-    ConfigModule,
     PrismaModule,
     SendGridModule,
-    BullModule.registerQueueAsync({
+    BullModule.registerQueue({
       name: 'notification-queue',
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        redis: {
-          host: configService.get('REDIS_HOST', process.env.REDIS_HOST),
-          port: configService.get('REDIS_PORT', Number(process.env.REDIS_PORT)),
-        },
-      }),
-      inject: [ConfigService],
+      redis: {
+        host: env.REDIS_HOST,
+        port: env.REDIS_PORT,
+      },
     }),
   ],
   controllers: [NotificationsController],

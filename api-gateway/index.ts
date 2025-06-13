@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import { cleanEnv, str } from "envalid";
+import { env } from "./env.js";
 
 import authRouter from "./routes/auth.js";
 import profileRouter from "./routes/profile.js";
@@ -15,20 +15,6 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 
 dotenv.config();
 
-// Validate environment variables for production safety
-cleanEnv(process.env, {
-  PORT: str(),
-  CHAT_SERVICE_WS_URL: str(),
-  AUTH_SERVICE_URL: str(),
-  USER_SERVICE_URL: str(),
-  PROFILE_SERVICE_URL: str(),
-  POST_SERVICE_URL: str(),
-  NOTIFICATION_SERVICE_URL: str(),
-  CHAT_ROOMS_SERVICE_URL: str(),
-  MEDIA_SERVICE_URL: str(),
-  FRONTEND_URL: str(),
-});
-
 // --- Simple industry-style logger ---
 function log(level: 'INFO' | 'ERROR' | 'WARN' | 'DEBUG', message: string, meta: Record<string, any> = {}) {
   const timestamp = new Date().toISOString();
@@ -38,11 +24,11 @@ function log(level: 'INFO' | 'ERROR' | 'WARN' | 'DEBUG', message: string, meta: 
 }
 
 const app = express();
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 
 // --- WebSocket Proxy Middleware ---
 const wsProxy = createProxyMiddleware({
-  target: process.env.CHAT_SERVICE_WS_URL,
+  target: env.CHAT_SERVICE_WS_URL,
   changeOrigin: true,
   ws: true,
   on: {
@@ -92,7 +78,7 @@ app.get("/api/test", (req, res) => {
 });
 
 // --- Start server and attach WebSocket upgrade handler ---
-const PORT = process.env.PORT || 8082;
+const PORT = env.PORT || 8082;
 const server = app.listen(PORT, () => {
   log('INFO', 'API Gateway listening', { port: PORT });
 });

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
+import { env } from '../../env';
 
 // Custom extractor for JWT from cookie
 const cookieExtractor = (req: Request): string | null => {
@@ -19,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         cookieExtractor,
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
-      secretOrKey: process.env.JWT_SECRET || '',
+      secretOrKey: env.JWT_SECRET,
     });
   }
 

@@ -16,7 +16,6 @@ import {
 } from '@nestjs/common';
 import { ChatService } from '../chat.service';
 import { CreateMessageDto } from '../dto/create-message.dto';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { verifyWsClientToken } from '../../ws-auth/ws-auth.util';
 import * as cookie from 'cookie';
@@ -33,9 +32,11 @@ interface CustomSocket extends BaseSocket {
 // Use our custom socket type
 type Socket = CustomSocket;
 
+import { env } from '../../env';
+
 @WebSocketGateway({
   cors: {
-    origin: process.env.API_GATEWAY || '*',
+    origin: env.API_GATEWAY || '*',
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -49,7 +50,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -66,11 +66,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // Verify the token and get user payload
-      const payload = await verifyWsClientToken(
-        client,
-        this.jwtService,
-        this.configService,
-      );
+      const payload = await verifyWsClientToken(client, this.jwtService);
 
       client.user = {
         id: payload.sub,

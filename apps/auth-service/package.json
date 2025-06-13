@@ -40,6 +40,7 @@
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
     "date-fns": "^4.1.0",
+    "envalid": "^8.0.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^6.7.0",

@@ -3,7 +3,6 @@ import { ChatGateway } from './gateways/chat.gateway';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module';
 import { ChatController } from './chat.controller';
 import { UserRestService } from '../external/user.rest.service';
@@ -17,7 +16,6 @@ import { HttpModule } from '@nestjs/axios';
     ChatService,
     PrismaService,
     JwtService,
-    ConfigService,
     UserRestService,
   ],
 })
