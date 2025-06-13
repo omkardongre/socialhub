@@ -1,21 +1,31 @@
-# Base image
-FROM node:20-alpine
-
+# ---- Stage 1: Build ----
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package files first for better layer caching
 COPY apps/media-service/package*.json ./
 COPY apps/media-service/prisma ./prisma/
 
-# Install dependencies
 RUN npm install
 
-# Copy the rest of the application
 COPY apps/media-service/ .
 
-# Generate Prisma client if needed
-RUN if [ -f "prisma/schema.prisma" ]; then npx prisma generate; fi
+RUN npm run build
+
+# ---- Stage 2: Runtime ----
+FROM node:20-alpine
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY apps/media-service/package*.json ./
+COPY apps/media-service/prisma ./prisma/
+
+RUN npm install --only=production
+
+COPY --from=builder /app/dist ./dist
+
+RUN npx prisma generate
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["node", "dist/main.js"]
