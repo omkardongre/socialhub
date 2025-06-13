@@ -16,9 +16,15 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 dotenv.config();
 
 // --- Simple industry-style logger ---
-function log(level: 'INFO' | 'ERROR' | 'WARN' | 'DEBUG', message: string, meta: Record<string, any> = {}) {
+function log(
+  level: "INFO" | "ERROR" | "WARN" | "DEBUG",
+  message: string,
+  meta: Record<string, any> = {}
+) {
   const timestamp = new Date().toISOString();
-  const metaString = Object.keys(meta).length ? ` | meta: ${JSON.stringify(meta)}` : '';
+  const metaString = Object.keys(meta).length
+    ? ` | meta: ${JSON.stringify(meta)}`
+    : "";
   // eslint-disable-next-line no-console
   console.log(`[${timestamp}] [${level}] ${message}${metaString}`);
 }
@@ -34,17 +40,23 @@ const wsProxy = createProxyMiddleware({
   on: {
     proxyReq: (proxyReq, req, res) => {
       if (req.url && req.url.startsWith("/chat")) {
-        log('INFO', 'Proxy HTTP request to /chat', { method: req.method, url: req.url });
+        log("INFO", "Proxy HTTP request to /chat", {
+          method: req.method,
+          url: req.url,
+        });
       }
     },
     proxyReqWs: (proxyReq, req, socket) => {
-      log('INFO', 'WebSocket upgrade request', { url: req.url });
+      log("INFO", "WebSocket upgrade request", { url: req.url });
       socket.on("error", (error) => {
-        log('ERROR', 'WebSocket socket error', { error: error.message, url: req.url });
+        log("ERROR", "WebSocket socket error", {
+          error: error.message,
+          url: req.url,
+        });
       });
     },
     error: (err, req, res) => {
-      log('ERROR', 'Proxy error', { error: err.message, url: req.url });
+      log("ERROR", "Proxy error", { error: err.message, url: req.url });
     },
   },
 });
@@ -65,7 +77,10 @@ app.use(express.json());
 
 // --- Request logging middleware ---
 app.use((req, res, next) => {
-  log('INFO', 'Incoming HTTP request', { method: req.method, url: req.originalUrl });
+  log("INFO", "Incoming HTTP request", {
+    method: req.method,
+    url: req.originalUrl,
+  });
   next();
 });
 
@@ -80,7 +95,7 @@ app.get("/api/test", (req, res) => {
 // --- Start server and attach WebSocket upgrade handler ---
 const PORT = env.PORT || 8082;
 const server = app.listen(PORT, () => {
-  log('INFO', 'API Gateway listening', { port: PORT });
+  log("INFO", "API Gateway listening", { port: PORT });
 });
 
 // Attach WebSocket upgrade event for proper proxying
