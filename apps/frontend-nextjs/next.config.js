@@ -1,8 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  images: {
-    domains: ["gravatar.com", "socialhub-test.s3.us-east-1.amazonaws.com"],
-  },
-};
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer({
+  // your existing Next.js config here
+});

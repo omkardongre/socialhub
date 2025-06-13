@@ -22,6 +22,8 @@ export function NotificationsList() {
       });
       return res.data.data;
     },
+    staleTime: 60000, // 1 minute
+    refetchOnWindowFocus: false,
   });
 
   const markReadMutation = useMutation({
@@ -43,11 +45,9 @@ export function NotificationsList() {
         <Checkbox
           id="unread-filter"
           checked={filterUnread}
-          onCheckedChange={(val) => setFilterUnread(!!val)}
+          onCheckedChange={(val: boolean) => setFilterUnread(!!val)}
         />
-        <Label htmlFor="unread-filter">
-          Show only unread
-        </Label>
+        <Label htmlFor="unread-filter">Show only unread</Label>
       </div>
 
       {isLoading ? (

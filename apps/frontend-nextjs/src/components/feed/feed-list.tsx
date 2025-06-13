@@ -11,6 +11,8 @@ export function FeedList() {
   const { data, isLoading } = useQuery({
     queryKey: ["feed"],
     queryFn: async () => (await api.get("/posts/feed")).data,
+    staleTime: 120000, // 2 minutes
+    refetchOnWindowFocus: false,
   });
 
   if (isLoading)
