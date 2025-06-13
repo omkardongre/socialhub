@@ -44,4 +44,4 @@
     
     EXPOSE 3000
     
-    CMD ["node", "dist/main.js"]
+    CMD ["node", "dist/apps/notification-service/src/main.js"]
