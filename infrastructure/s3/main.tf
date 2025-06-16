@@ -34,6 +34,13 @@ resource "aws_s3_bucket_policy" "restrict_public_access" {
             "aws:SecureTransport" = "false"
           }
         }
+      },
+      {
+        Sid       = "PublicRead",
+        Effect    = "Allow",
+        Principal = "*",
+        Action    = "s3:GetObject",
+        Resource  = "${aws_s3_bucket.media.arn}/*"
       }
     ]
   })
