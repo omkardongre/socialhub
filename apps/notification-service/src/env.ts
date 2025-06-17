@@ -6,4 +6,6 @@ export const env = cleanEnv(process.env, {
   SENDGRID_API_KEY: str(),
   FROM_EMAIL: str(),
   REDIS_URL: str(),
+  RABBITMQ_URL: str(),
+  RABBITMQ_QUEUE: str(),
 });

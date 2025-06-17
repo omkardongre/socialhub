@@ -78,7 +78,7 @@ services:
     ports:
       - "3001:3000"
     env_file:
-      - ./apps/auth-service/.env.production
+      - ./apps/auth-service/.env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -92,7 +92,7 @@ services:
     ports:
       - "3002:3000"
     env_file:
-      - ./apps/user-service/.env.production
+      - ./apps/user-service/.env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -106,7 +106,7 @@ services:
     ports:
       - "3003:3000"
     env_file:
-      - ./apps/post-service/.env.production
+      - ./apps/post-service/.env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -120,7 +120,7 @@ services:
     ports:
       - "3004:3000"
     env_file:
-      - ./apps/media-service/.env.production
+      - ./apps/media-service/.env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -134,7 +134,7 @@ services:
     ports:
       - "3005:3000"
     env_file:
-      - ./apps/notification-service/.env.production
+      - ./apps/notification-service/.env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -148,7 +148,7 @@ services:
     ports:
       - "3006:3000"
     env_file:
-      - ./apps/chat-service/.env.production
+      - ./apps/chat-service/.env
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -162,7 +162,7 @@ services:
     ports:
       - "3007:3000"
     env_file:
-      - ./apps/frontend-nextjs/.env.production
+      - ./apps/frontend-nextjs/.env
 
   api-gateway:
     build:
@@ -171,7 +171,7 @@ services:
     ports:
       - "8082:8082"
     env_file:
-      - ./api-gateway/.env.production
+      - ./api-gateway/.env
     depends_on:
       - auth-service
       - user-service

@@ -24,8 +24,8 @@ async function bootstrap(): Promise<void> {
   app.connectMicroservice({
     transport: Transport.RMQ,
     options: {
-      urls: ['amqp://guest:guest@rabbitmq:5672'],
-      queue: 'notifications_queue',
+      urls: [env.RABBITMQ_URL],
+      queue: env.RABBITMQ_QUEUE,
       queueOptions: {
         durable: true,
       },
