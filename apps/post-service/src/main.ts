@@ -26,5 +26,6 @@ async function bootstrap() {
   app.useGlobalFilters(new AuthExceptionFilter());
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(env.PORT);
+  console.log(`Post Service is running on port ${env.PORT}`);
 }
 bootstrap();

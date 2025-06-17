@@ -39,7 +39,7 @@ async function bootstrap(): Promise<void> {
     await app.listen(env.PORT);
 
     const url = await app.getUrl();
-    console.log(`Notification service is running on: ${url}`);
+    console.log(`Notification Service is running on port ${env.PORT}`);
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';

@@ -1,11 +1,16 @@
 # --- ECS Task Definitions ---
+
+data "aws_secretsmanager_secret" "ghcr" {
+  name = "ghcr-credentials-alt"
+}
+
 resource "aws_ecs_task_definition" "auth_service" {
   family                   = "auth-service-task"
   network_mode             = "bridge"
   requires_compatibilities = ["EC2"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_instance_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   container_definitions    = jsonencode([
     {
       name             = "auth-service"
@@ -15,6 +20,17 @@ resource "aws_ecs_task_definition" "auth_service" {
       environmentFiles = [{ value = "arn:aws:s3:::socialhub-env-files/auth-service.env", type = "s3" }]
       cpu              = 256
       memory           = 512
+      repositoryCredentials = {
+        credentialsParameter = data.aws_secretsmanager_secret.ghcr.arn
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -25,7 +41,7 @@ resource "aws_ecs_task_definition" "user_service" {
   requires_compatibilities = ["EC2"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_instance_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   container_definitions    = jsonencode([
     {
       name             = "user-service"
@@ -35,6 +51,17 @@ resource "aws_ecs_task_definition" "user_service" {
       environmentFiles = [{ value = "arn:aws:s3:::socialhub-env-files/user-service.env", type = "s3" }]
       cpu              = 256
       memory           = 512
+      repositoryCredentials = {
+        credentialsParameter = data.aws_secretsmanager_secret.ghcr.arn
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -45,7 +72,7 @@ resource "aws_ecs_task_definition" "post_service" {
   requires_compatibilities = ["EC2"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_instance_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   container_definitions    = jsonencode([
     {
       name             = "post-service"
@@ -55,6 +82,17 @@ resource "aws_ecs_task_definition" "post_service" {
       environmentFiles = [{ value = "arn:aws:s3:::socialhub-env-files/post-service.env", type = "s3" }]
       cpu              = 256
       memory           = 512
+      repositoryCredentials = {
+        credentialsParameter = data.aws_secretsmanager_secret.ghcr.arn
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -65,7 +103,7 @@ resource "aws_ecs_task_definition" "media_service" {
   requires_compatibilities = ["EC2"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_instance_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   container_definitions    = jsonencode([
     {
       name             = "media-service"
@@ -75,6 +113,17 @@ resource "aws_ecs_task_definition" "media_service" {
       environmentFiles = [{ value = "arn:aws:s3:::socialhub-env-files/media-service.env", type = "s3" }]
       cpu              = 256
       memory           = 512
+      repositoryCredentials = {
+        credentialsParameter = data.aws_secretsmanager_secret.ghcr.arn
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -85,7 +134,7 @@ resource "aws_ecs_task_definition" "notification_service" {
   requires_compatibilities = ["EC2"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_instance_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   container_definitions    = jsonencode([
     {
       name             = "notification-service"
@@ -95,6 +144,17 @@ resource "aws_ecs_task_definition" "notification_service" {
       environmentFiles = [{ value = "arn:aws:s3:::socialhub-env-files/notification-service.env", type = "s3" }]
       cpu              = 256
       memory           = 512
+      repositoryCredentials = {
+        credentialsParameter = data.aws_secretsmanager_secret.ghcr.arn
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -105,7 +165,7 @@ resource "aws_ecs_task_definition" "chat_service" {
   requires_compatibilities = ["EC2"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_instance_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   container_definitions    = jsonencode([
     {
       name             = "chat-service"
@@ -115,6 +175,17 @@ resource "aws_ecs_task_definition" "chat_service" {
       environmentFiles = [{ value = "arn:aws:s3:::socialhub-env-files/chat-service.env", type = "s3" }]
       cpu              = 256
       memory           = 512
+      repositoryCredentials = {
+        credentialsParameter = data.aws_secretsmanager_secret.ghcr.arn
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }
@@ -125,7 +196,7 @@ resource "aws_ecs_task_definition" "api_gateway" {
   requires_compatibilities = ["EC2"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_instance_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   container_definitions    = jsonencode([
     {
       name             = "api-gateway"
@@ -135,6 +206,17 @@ resource "aws_ecs_task_definition" "api_gateway" {
       environmentFiles = [{ value = "arn:aws:s3:::socialhub-env-files/api-gateway.env", type = "s3" }]
       cpu              = 256
       memory           = 512
+      repositoryCredentials = {
+        credentialsParameter = data.aws_secretsmanager_secret.ghcr.arn
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }

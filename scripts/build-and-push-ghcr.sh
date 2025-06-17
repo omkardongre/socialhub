@@ -6,16 +6,18 @@ GH_EMAIL=$(git config --get user.email)
 
 # Get the root directory of the project
 ROOT_DIR=$(git rev-parse --show-toplevel)
+cd "$ROOT_DIR"
+
 
 # Array of services with their paths
 SERVICES=(
   "auth-service:apps/auth-service"
-  # "user-service:apps/user-service"
-  # "post-service:apps/post-service"
-  # "chat-service:apps/chat-service"
-  # "media-service:apps/media-service"
-  # "notification-service:apps/notification-service"
-  # "api-gateway:api-gateway"
+  "user-service:apps/user-service"
+  "post-service:apps/post-service"
+  "chat-service:apps/chat-service"
+  "media-service:apps/media-service"
+  "notification-service:apps/notification-service"
+  "api-gateway:api-gateway"
 )
 
 # Login to GitHub Container Registry
@@ -30,6 +32,15 @@ for SERVICE in "${SERVICES[@]}"; do
   # Get service name and path
   SERVICE_NAME=${SERVICE%%:*}
   SERVICE_PATH=${SERVICE#*:}
+
+
+  # Detect uncommitted, staged, or unpushed committed changes
+  if git diff --quiet -- "$SERVICE_PATH" && \
+    git diff --cached --quiet -- "$SERVICE_PATH" && \
+    git diff --quiet origin/main...HEAD -- "$SERVICE_PATH"; then
+    echo "No changes detected in $SERVICE_PATH. Skipping build and push."
+    continue
+  fi
   
   # Build Docker image
   echo "Building Docker image for $SERVICE_NAME..."
