@@ -5,6 +5,5 @@ export const env = cleanEnv(process.env, {
   PORT: port({ default: 3000 }),
   SENDGRID_API_KEY: str(),
   FROM_EMAIL: str(),
-  REDIS_HOST: str(),
-  REDIS_PORT: num({ default: 6379 }),
+  REDIS_URL: str(),
 });

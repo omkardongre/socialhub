@@ -24,5 +24,6 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AuthExceptionFilter());
   await app.listen(env.PORT);
+  console.log(`Media Service is running on port ${env.PORT}`);
 }
 bootstrap();

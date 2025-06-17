@@ -13,10 +13,7 @@ import { SendGridModule } from '../sendgrid/sendgrid.module';
     SendGridModule,
     BullModule.registerQueue({
       name: 'notification-queue',
-      redis: {
-        host: env.REDIS_HOST,
-        port: env.REDIS_PORT,
-      },
+      redis: env.REDIS_URL,
     }),
   ],
   controllers: [NotificationsController],

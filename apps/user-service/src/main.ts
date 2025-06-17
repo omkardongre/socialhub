@@ -36,5 +36,6 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(env.PORT);
+  console.log(`User Service is running on port ${env.PORT}`);
 }
 bootstrap();

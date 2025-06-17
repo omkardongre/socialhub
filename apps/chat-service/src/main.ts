@@ -22,6 +22,6 @@ async function bootstrap() {
   app.useGlobalFilters(new ChatExceptionFilter());
 
   await app.listen(env.PORT);
-  console.log(`Application is running on ${env.PORT}`);
+  console.log(`Chat Service is running on port ${env.PORT}`);
 }
 bootstrap();
