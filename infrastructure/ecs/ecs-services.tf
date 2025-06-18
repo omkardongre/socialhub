@@ -7,6 +7,9 @@ resource "aws_ecs_service" "auth_service" {
   launch_type     = "EC2"
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
+  service_registries {
+    registry_arn = aws_service_discovery_service.auth_service.arn
+  }
 }
 
 resource "aws_ecs_service" "user_service" {
@@ -17,6 +20,9 @@ resource "aws_ecs_service" "user_service" {
   launch_type     = "EC2"
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
+  service_registries {
+    registry_arn = aws_service_discovery_service.user_service.arn
+  }
 }
 
 resource "aws_ecs_service" "post_service" {
@@ -27,6 +33,9 @@ resource "aws_ecs_service" "post_service" {
   launch_type     = "EC2"
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
+  service_registries {
+    registry_arn = aws_service_discovery_service.post_service.arn
+  }
 }
 
 resource "aws_ecs_service" "media_service" {
@@ -37,6 +46,9 @@ resource "aws_ecs_service" "media_service" {
   launch_type     = "EC2"
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
+  service_registries {
+    registry_arn = aws_service_discovery_service.media_service.arn
+  }
 }
 
 resource "aws_ecs_service" "notification_service" {
@@ -47,6 +59,9 @@ resource "aws_ecs_service" "notification_service" {
   launch_type     = "EC2"
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
+  service_registries {
+    registry_arn = aws_service_discovery_service.notification_service.arn
+  }
 }
 
 resource "aws_ecs_service" "chat_service" {
@@ -57,6 +72,9 @@ resource "aws_ecs_service" "chat_service" {
   launch_type     = "EC2"
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
+  service_registries {
+    registry_arn = aws_service_discovery_service.chat_service.arn
+  }
 }
 
 resource "aws_ecs_service" "api_gateway" {
