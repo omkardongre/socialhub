@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "NotificationType" AS ENUM ('FOLLOW', 'LIKE', 'COMMENT', 'MENTION', 'SYSTEM');
+CREATE TYPE "NotificationType" AS ENUM ('FOLLOW', 'LIKE', 'COMMENT', 'MENTION', 'SYSTEM', 'POST');
 
 -- CreateEnum
 CREATE TYPE "EntityType" AS ENUM ('POST', 'COMMENT', 'USER', 'SYSTEM');
@@ -31,6 +31,7 @@ CREATE TABLE "NotificationPreference" (
     "systemNotifications" BOOLEAN NOT NULL DEFAULT true,
     "emailNotifications" BOOLEAN NOT NULL DEFAULT false,
     "pushNotifications" BOOLEAN NOT NULL DEFAULT false,
+    "postNotifications" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
