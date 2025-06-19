@@ -22,6 +22,7 @@ export default createProxyMiddleware({
   target: process.env.AUTH_SERVICE_URL, // Auth Service
   changeOrigin: true,
   pathRewrite: { "^/api/auth": "" },
+  cookieDomainRewrite: "localhost",
   // on: {
   //   proxyReq: onProxyReq,
   //   proxyRes: onProxyRes,

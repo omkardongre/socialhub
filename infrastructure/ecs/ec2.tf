@@ -12,6 +12,7 @@ data "aws_ami" "ecs_ami" {
 resource "aws_instance" "ecs_instance" {
   ami           = data.aws_ami.ecs_ami.id
   instance_type = "t2.micro"
+  private_ip = "10.0.1.101"
   subnet_id     = data.aws_subnet.public_subnet_a.id
   vpc_security_group_ids = [aws_security_group.ecs_instance_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ecs_instance_profile.name

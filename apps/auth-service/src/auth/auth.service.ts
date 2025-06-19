@@ -322,7 +322,7 @@ export class AuthService {
   }
 
   private async sendVerificationEmail(email: string, token: string) {
-    const verificationLink = `http://localhost:3001/auth/verify?token=${token}`;
+    const verificationLink = `${env.API_GATEWAY_URL}/api/auth/verify?token=${token}`;
     const subject = 'Verify your email address';
     const text = `Please verify your email by clicking the following link: ${verificationLink}`;
     const html = `<p>Please verify your email by clicking the following link:</p><p><a href="${verificationLink}">${verificationLink}</a></p>`;

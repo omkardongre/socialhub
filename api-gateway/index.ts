@@ -30,7 +30,27 @@ function log(
 }
 
 const app = express();
-app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://10.0.1.101:3000",
+  "http://44.220.89.169:3000" // (add your public frontend if needed)
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 // --- WebSocket Proxy Middleware ---
 const wsProxy = createProxyMiddleware({
