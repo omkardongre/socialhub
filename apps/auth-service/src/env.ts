@@ -12,4 +12,5 @@ export const env = cleanEnv(process.env, {
   SENDGRID_API_KEY: str(),
   FROM_EMAIL: str(),
   SIGNUP_SUCCESS_URL: str(),
+  API_GATEWAY_URL: str(),
 });
