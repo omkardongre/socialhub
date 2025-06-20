@@ -1,54 +1,49 @@
-provider "aws" {
-  region  = "us-east-1"
-  profile = "terraform"
-}
-
 resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr
   enable_dns_hostnames = true
-  tags = {
-    Name = "socialhub-vpc"
-  }
+  tags = merge({
+    Name = var.vpc_name
+  }, var.tags)
 }
 
 # Public Subnet A
 resource "aws_subnet" "public_subnet_a" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
-  availability_zone       = "us-east-1a"
+  cidr_block              = var.public_subnet_a_cidr
+  availability_zone       = var.az_a
   map_public_ip_on_launch = true
-  tags = { Name = "public-subnet-a" }
+  tags = merge({ Name = "public-subnet-a" }, var.tags)
 }
 
 # Public Subnet B
 resource "aws_subnet" "public_subnet_b" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.2.0/24"
-  availability_zone       = "us-east-1b"
+  cidr_block              = var.public_subnet_b_cidr
+  availability_zone       = var.az_b
   map_public_ip_on_launch = true
-  tags = { Name = "public-subnet-b" }
+  tags = merge({ Name = "public-subnet-b" }, var.tags)
 }
 
 # Private Subnet A
 resource "aws_subnet" "private_subnet_a" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.101.0/24"
-  availability_zone = "us-east-1a"
-  tags = { Name = "private-subnet-a" }
+  cidr_block        = var.private_subnet_a_cidr
+  availability_zone = var.az_a
+  tags = merge({ Name = "private-subnet-a" }, var.tags)
 }
 
 # Private Subnet B
 resource "aws_subnet" "private_subnet_b" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.102.0/24"
-  availability_zone = "us-east-1b"
-  tags = { Name = "private-subnet-b" }
+  cidr_block        = var.private_subnet_b_cidr
+  availability_zone = var.az_b
+  tags = merge({ Name = "private-subnet-b" }, var.tags)
 }
 
 # Internet Gateway
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
-  tags = { Name = "main-igw" }
+  tags = merge({ Name = "main-igw" }, var.tags)
 }
 
 
@@ -59,7 +54,7 @@ resource "aws_route_table" "public" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
-  tags = { Name = "public-rt" }
+  tags = merge({ Name = "public-rt" }, var.tags)
 }
 
 # Route Table Association for Public Subnet A
@@ -78,7 +73,7 @@ resource "aws_route_table_association" "public_b" {
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
   # No default route to NAT Gateway, private subnets will not have internet access
-  tags = { Name = "private-rt" }
+  tags = merge({ Name = "private-rt" }, var.tags)
 }
 
 # Route Table Association for Private Subnet A
@@ -91,27 +86,5 @@ resource "aws_route_table_association" "private_a" {
 resource "aws_route_table_association" "private_b" {
   subnet_id      = aws_subnet.private_subnet_b.id
   route_table_id = aws_route_table.private.id
-}
-
-# Security Group for App (example)
-resource "aws_security_group" "app_sg" {
-  vpc_id = aws_vpc.main.id
-  name   = "app-security-group"
-
-  ingress {
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = { Name = "app-sg" }
 }
 
