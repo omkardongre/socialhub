@@ -31,6 +31,14 @@ module "env_files" {
     { s3_key = "chat-service.env", file_path = "${path.module}/../../apps/chat-service/.env" },
     { s3_key = "media-service.env", file_path = "${path.module}/../../apps/media-service/.env" },
     { s3_key = "notification-service.env", file_path = "${path.module}/../../apps/notification-service/.env" },
-    { s3_key = "api-gateway.env", file_path = "${path.module}/../../api-gateway/.env" }
+    { s3_key = "api-gateway.env", file_path = "${path.module}/../api-gateway/.env" }
   ]
+}
+
+module "media_bucket" {
+  source            = "./media-bucket"
+  bucket_name       = "socialhub-media-bucket"
+  tags              = { Name = "media-bucket" }
+  enable_versioning = true
+  allow_public_read = true
 }

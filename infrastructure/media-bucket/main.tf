@@ -1,24 +1,18 @@
-provider "aws" {
-  region  = "us-east-1"
-  profile = "terraform"
-}
-
 resource "aws_s3_bucket" "media" {
-  bucket = "socialhub-test"
-
-  tags = {
-    Name = "media-bucket"
-  }
+  bucket = var.bucket_name
+  tags   = var.tags
 }
 
 resource "aws_s3_bucket_versioning" "media_versioning" {
+  count = var.enable_versioning ? 1 : 0
   bucket = aws_s3_bucket.media.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
-resource "aws_s3_bucket_policy" "restrict_public_access" {
+resource "aws_s3_bucket_policy" "media_policy" {
+  count = var.allow_public_read ? 1 : 0
   bucket = aws_s3_bucket.media.id
   policy = jsonencode({
     Version = "2012-10-17",
