@@ -82,3 +82,51 @@ variable "repo_creds_arn" {
   description = "ARN of the GHCR credentials secret"
   type        = string
 }
+
+variable "auth_service_image_tag" {
+  description = "Image tag for auth-service"
+  type        = string
+}
+
+variable "user_service_image_tag" {
+  description = "Image tag for user-service"
+  type        = string
+}
+
+variable "post_service_image_tag" {
+  description = "Image tag for post-service"
+  type        = string
+}
+
+variable "notification_service_image_tag" {
+  description = "Image tag for notification-service"
+  type        = string
+}
+
+variable "chat_service_image_tag" {
+  description = "Image tag for chat-service"
+  type        = string
+}
+
+variable "media_service_image_tag" {
+  description = "Image tag for media-service"
+  type        = string
+}
+
+variable "api_gateway_image_tag" {
+  description = "Image tag for api-gateway"
+  type        = string
+}
+
+locals {
+  log_group_name = aws_cloudwatch_log_group.ecs.name
+  repo_creds_arn = var.repo_creds_arn
+  env_files_bucket = var.env_files_bucket
+  auth_service_image = "ghcr.io/omkardongre/auth-service:${var.auth_service_image_tag}"
+  user_service_image = "ghcr.io/omkardongre/user-service:${var.user_service_image_tag}"
+  post_service_image = "ghcr.io/omkardongre/post-service:${var.post_service_image_tag}"
+  notification_service_image = "ghcr.io/omkardongre/notification-service:${var.notification_service_image_tag}"
+  chat_service_image = "ghcr.io/omkardongre/chat-service:${var.chat_service_image_tag}"
+  media_service_image = "ghcr.io/omkardongre/media-service:${var.media_service_image_tag}"
+  api_gateway_image = "ghcr.io/omkardongre/api-gateway:${var.api_gateway_image_tag}"
+}
