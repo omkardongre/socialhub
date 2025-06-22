@@ -8,11 +8,7 @@ resource "aws_ecs_service" "auth_service" {
   enable_execute_command = true
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
-  service_registries {
-    registry_arn   = aws_service_discovery_service.auth_service.arn
-    container_name = "auth-service"
-    container_port = 3000
-  }
+
 }
 
 resource "aws_ecs_service" "user_service" {
@@ -24,11 +20,7 @@ resource "aws_ecs_service" "user_service" {
   enable_execute_command = true
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
-  service_registries {
-    registry_arn   = aws_service_discovery_service.user_service.arn
-    container_name = "user-service"
-    container_port = 3000
-  }
+
 }
 
 resource "aws_ecs_service" "post_service" {
@@ -40,11 +32,7 @@ resource "aws_ecs_service" "post_service" {
   enable_execute_command = true
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
-  service_registries {
-    registry_arn   = aws_service_discovery_service.post_service.arn
-    container_name = "post-service"
-    container_port = 3000
-  }
+
 }
 
 resource "aws_ecs_service" "media_service" {
@@ -56,11 +44,7 @@ resource "aws_ecs_service" "media_service" {
   enable_execute_command = true
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
-  service_registries {
-    registry_arn   = aws_service_discovery_service.media_service.arn
-    container_name = "media-service"
-    container_port = 3000
-  }
+
 }
 
 resource "aws_ecs_service" "notification_service" {
@@ -72,11 +56,7 @@ resource "aws_ecs_service" "notification_service" {
   enable_execute_command = true
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
-  service_registries {
-    registry_arn   = aws_service_discovery_service.notification_service.arn
-    container_name = "notification-service"
-    container_port = 3000
-  }
+
 }
 
 resource "aws_ecs_service" "chat_service" {
@@ -88,11 +68,7 @@ resource "aws_ecs_service" "chat_service" {
   enable_execute_command = true
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
-  service_registries {
-    registry_arn   = aws_service_discovery_service.chat_service.arn
-    container_name = "chat-service"
-    container_port = 3000
-  }
+
 }
 
 resource "aws_ecs_service" "api_gateway" {
