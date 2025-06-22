@@ -42,5 +42,12 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
-          docker build -f ${{ matrix.path }}/Dockerfile -t $IMAGE_NAME:latest .
-          docker push $IMAGE_NAME:latest
+          IMAGE_TAG=${{ github.sha }}
+          docker build -f ${{ matrix.path }}/Dockerfile -t $IMAGE_NAME:$IMAGE_TAG .
+          docker push $IMAGE_NAME:$IMAGE_TAG
+          echo "$IMAGE_TAG" > image-tag.txt
+      - name: Upload image tag artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-image-tag
+          path: image-tag.txt
