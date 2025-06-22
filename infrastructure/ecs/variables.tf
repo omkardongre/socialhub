@@ -77,3 +77,8 @@ variable "key_name" {
   type        = string
   default     = "socialhub-key"
 }
+
+variable "repo_creds_arn" {
+  description = "ARN of the GHCR credentials secret"
+  type        = string
+}

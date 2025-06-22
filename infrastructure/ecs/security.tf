@@ -25,7 +25,7 @@ resource "aws_security_group" "ecs_instance_sg" {
     from_port   = 3004
     to_port     = 3004
     protocol    = "tcp"
-    cidr_blocks = [module.vpc.vpc_cidr_block]
+    cidr_blocks = [var.vpc_cidr_block]
   }
 
   # Allow SSH access from your IP only

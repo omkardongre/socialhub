@@ -2,12 +2,8 @@
 
 locals {
   log_group_name = aws_cloudwatch_log_group.ecs.name
-  repo_creds_arn = data.aws_secretsmanager_secret.ghcr.arn
+  repo_creds_arn = var.repo_creds_arn
   env_files_bucket = var.env_files_bucket
-}
-
-data "aws_secretsmanager_secret" "ghcr" {
-  name = "ghcr-credentials-alt"
 }
 
 resource "aws_ecs_task_definition" "auth_service" {

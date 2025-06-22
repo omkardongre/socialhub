@@ -49,4 +49,5 @@ module "ecs" {
   vpc_cidr_block     = module.vpc.vpc_cidr_block
   public_subnet_a_id = module.vpc.public_subnet_a_id
   env_files_bucket   = module.env_files.bucket_name
+  repo_creds_arn     = module.ghcr_secret.arn
 }
