@@ -3,6 +3,15 @@ resource "aws_s3_bucket" "media" {
   tags   = var.tags
 }
 
+resource "aws_s3_bucket_public_access_block" "media_public_access" {
+  count = var.allow_public_read ? 1 : 0
+  bucket = aws_s3_bucket.media.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
 resource "aws_s3_bucket_versioning" "media_versioning" {
   count = var.enable_versioning ? 1 : 0
   bucket = aws_s3_bucket.media.id
