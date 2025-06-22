@@ -5,34 +5,83 @@ on:
     branches: [main]
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      auth-service: ${{ steps.filter.outputs.auth-service }}
+      user-service: ${{ steps.filter.outputs.user-service }}
+      post-service: ${{ steps.filter.outputs.post-service }}
+      notification-service: ${{ steps.filter.outputs.notification-service }}
+      chat-service: ${{ steps.filter.outputs.chat-service }}
+      media-service: ${{ steps.filter.outputs.media-service }}
+      api-gateway: ${{ steps.filter.outputs.api-gateway }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Filter changed services
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            auth-service:
+              - 'apps/auth-service/**'
+            user-service:
+              - 'apps/user-service/**'
+            post-service:
+              - 'apps/post-service/**'
+            notification-service:
+              - 'apps/notification-service/**'
+            chat-service:
+              - 'apps/chat-service/**'
+            media-service:
+              - 'apps/media-service/**'
+            api-gateway:
+              - 'api-gateway/**'
+
   build-and-push:
+    needs: detect-changes
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - name: auth-service
             path: apps/auth-service
+            changed: ${{ needs.detect-changes.outputs.auth-service }}
           - name: user-service
             path: apps/user-service
+            changed: ${{ needs.detect-changes.outputs.user-service }}
           - name: post-service
             path: apps/post-service
+            changed: ${{ needs.detect-changes.outputs.post-service }}
           - name: notification-service
             path: apps/notification-service
+            changed: ${{ needs.detect-changes.outputs.notification-service }}
           - name: chat-service
             path: apps/chat-service
+            changed: ${{ needs.detect-changes.outputs.chat-service }}
           - name: media-service
             path: apps/media-service
+            changed: ${{ needs.detect-changes.outputs.media-service }}
           - name: api-gateway
             path: api-gateway
-
+            changed: ${{ needs.detect-changes.outputs.api-gateway }}
+      fail-fast: false
     steps:
+      - name: Skip if service not changed
+        if: matrix.changed != 'true'
+        run: |
+          echo "Service ${{ matrix.name }} not changed. Skipping build."
+          exit 0
+
       - name: Checkout code
+        if: matrix.changed == 'true'
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
+        if: matrix.changed == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
+        if: matrix.changed == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -40,6 +89,7 @@ jobs:
           password: ${{ secrets.GHCR_PAT }}
 
       - name: Build and Push Docker Image
+        if: matrix.changed == 'true'
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
           IMAGE_TAG=${{ github.sha }}
@@ -47,6 +97,7 @@ jobs:
           docker push $IMAGE_NAME:$IMAGE_TAG
           echo "$IMAGE_TAG" > image-tag.txt
       - name: Upload image tag artifact
+        if: matrix.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-image-tag
