@@ -42,3 +42,11 @@ module "media_bucket" {
   enable_versioning = true
   allow_public_read = true
 }
+
+module "ecs" {
+  source             = "./ecs"
+  vpc_id             = module.vpc.vpc_id
+  vpc_cidr_block     = module.vpc.vpc_cidr_block
+  public_subnet_a_id = module.vpc.public_subnet_a_id
+  env_files_bucket   = module.env_files.bucket_name
+}
