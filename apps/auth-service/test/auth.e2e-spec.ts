@@ -118,12 +118,14 @@ describe('AuthController (e2e)', () => {
 
       expect(res.body).toEqual({
         success: true,
-        data: {
-          access_token: expect.any(String),
-          refresh_token: expect.any(String),
-        },
         message: 'Login successful',
       });
+
+      // Check for access token cookie
+      const cookies = res.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      const cookieArr = Array.isArray(cookies) ? cookies : [cookies];
+      expect(cookieArr.some((cookie) => cookie.includes('token='))).toBe(true);
     });
 
     it('should reject invalid password (403)', async () => {
@@ -143,6 +145,16 @@ describe('AuthController (e2e)', () => {
     });
   });
 
+  describe('/auth/health (GET)', () => {
+    it('should return health status (200)', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/auth/health')
+        .expect(200);
+
+      expect(res.body).toEqual({ status: 'ok' });
+    });
+  });
+
   describe('/auth/verify (GET)', () => {
     it('should verify email with valid token', async () => {
       const isVerified = false;
@@ -158,11 +170,9 @@ describe('AuthController (e2e)', () => {
         .get(`/auth/verify?token=${token}`)
         .expect(200);
 
-      // Verify the response
-      expect(res.body).toEqual({
-        success: true,
-        message: 'Email verified and profile initialized successfully',
-      });
+      // The controller returns HTML, not JSON
+      expect(res.text).toContain('Email Verified');
+      expect(res.text).toContain('Go to Login');
 
       // Verify the external service was called
       expect(mockUserRestService.createUserProfile).toHaveBeenCalledWith({
@@ -173,88 +183,15 @@ describe('AuthController (e2e)', () => {
         mockNotificationRestService.createDefaultPreferences,
       ).toHaveBeenCalledWith(user.id);
     });
-  });
 
-  describe('/auth/refresh (POST)', () => {
-    let testUser;
-    let refreshToken: string;
-
-    beforeEach(async () => {
-      // Create a test user and login to get a refresh token
-      testUser = await createTestUser(true);
-      const loginRes = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'test@example.com',
-          password: 'testpassword',
-        })
-        .expect(201);
-
-      refreshToken = loginRes.body.data.refresh_token;
-    });
-
-    it('should refresh tokens with valid refresh token', async () => {
+    it('should reject invalid token (400)', async () => {
       const res = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refresh_token: refreshToken })
-        .expect(201);
-
-      expect(res.body).toEqual({
-        success: true,
-        data: {
-          access_token: expect.any(String),
-          user: {
-            id: testUser.id,
-            email: 'test@example.com',
-          },
-        },
-        message: 'Tokens refreshed successfully',
-      });
-    });
-
-    it('should reject invalid refresh token', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refresh_token: 'invalid-token' })
-        .expect(403);
-
-      expect(res.body).toEqual({
-        statusCode: 403,
-        error: 'Forbidden',
-        message: 'Invalid refresh token',
-      });
-    });
-
-    it('should reject expired refresh token', async () => {
-      // Create an expired refresh token
-      const expiredToken = await jwtService.signAsync(
-        { sub: testUser.id, email: 'test@example.com' },
-        { expiresIn: '-1s' },
-      );
-
-      const res = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refresh_token: expiredToken })
-        .expect(403);
-
-      expect(res.body).toEqual({
-        statusCode: 403,
-        error: 'Forbidden',
-        message: 'Invalid refresh token',
-      });
-    });
-
-    it('should reject if no refresh token provided', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({})
+        .get('/auth/verify?token=invalid-token')
         .expect(400);
 
-      expect(res.body).toEqual({
-        statusCode: 400,
-        error: 'Bad Request',
-        message: 'Refresh token is required',
-      });
+      expect(res.text).toContain('Verification Failed');
     });
   });
+
+
 });

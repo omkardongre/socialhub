@@ -1,4 +1,3 @@
-// apps/auth-service/src/auth/auth.controller.spec.ts
 import { Test } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -10,42 +9,41 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('AuthController', () => {
   let controller: AuthController;
-
-  const mockAuthService = {
-    signup: jest.fn(),
-    login: jest.fn(),
-    verifyEmail: jest.fn().mockResolvedValue({
-      success: true,
-      message: 'Email verified successfully',
-    }),
-    refreshTokens: jest.fn().mockResolvedValue({
-      access_token: 'access',
-      refresh_token: 'refresh',
-    }),
-  };
-
-  const mockJwtService = {
-    verify: jest.fn(),
-    signAsync: jest.fn(),
-  };
-
-  const mockPrisma = {
-    session: {
-      findMany: jest.fn(),
-    },
-    user: {
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      findUnique: jest.fn(),
-    },
-  };
-
-  jest.mock('bcrypt', () => ({
-    hash: jest.fn().mockImplementation((token) => `hashed_${token}`),
-    compare: jest.fn().mockResolvedValue(true),
-  }));
+  let mockAuthService: any;
+  let mockJwtService: any;
+  let mockPrisma: any;
 
   beforeEach(async () => {
+    mockAuthService = {
+      signup: jest.fn(),
+      login: jest.fn(),
+      verifyEmail: jest.fn().mockResolvedValue({
+        success: true,
+        message: 'Email verified successfully',
+      }),
+      refreshTokens: jest.fn().mockResolvedValue({
+        access_token: 'access',
+        refresh_token: 'refresh',
+      }),
+    };
+
+    mockJwtService = {
+      verify: jest.fn(),
+      signAsync: jest.fn(),
+    };
+
+    mockPrisma = {
+      session: {
+        findMany: jest.fn(),
+        deleteMany: jest.fn(),
+      },
+      user: {
+        findFirst: jest.fn(),
+        update: jest.fn(),
+        findUnique: jest.fn(),
+      },
+    };
+
     const module = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -85,7 +83,7 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('should return formatted login response', async () => {
+    it('should set cookie and return success json', async () => {
       const dto: LoginDto = {
         email: 'test@example.com',
         password: 'Password123!',
@@ -94,16 +92,19 @@ describe('AuthController', () => {
         access_token: 'access',
         refresh_token: 'refresh',
       });
-
-      const result = await controller.login(dto);
-
+      const mockRes: any = {
+        cookie: jest.fn(),
+        json: jest.fn(),
+      };
+      await controller.login(dto, mockRes);
       expect(mockAuthService.login).toHaveBeenCalledWith(dto);
-      expect(result).toEqual({
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'token',
+        'access',
+        expect.objectContaining({ httpOnly: true })
+      );
+      expect(mockRes.json).toHaveBeenCalledWith({
         success: true,
-        data: {
-          access_token: 'access',
-          refresh_token: 'refresh',
-        },
         message: 'Login successful',
       });
     });
@@ -113,10 +114,12 @@ describe('AuthController', () => {
     it('should return user from request', () => {
       const mockUser = { id: '1', email: 'test@example.com' };
       const mockReq = { user: mockUser };
-
       const result = controller.getProfile(mockReq as any);
-
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual({
+        success: true,
+        data: { user: mockUser },
+        message: 'Current user profile',
+      });
     });
   });
 
@@ -128,7 +131,6 @@ describe('AuthController', () => {
         user: { id: '1', email: 'test@example.com' },
       };
 
-      // Mock the authService.refreshTokens method
       mockAuthService.refreshTokens.mockResolvedValue(mockResult);
 
       const result = await controller.refreshToken({
@@ -153,33 +155,60 @@ describe('AuthController', () => {
     });
   });
 
-  describe('verifyEmail', () => {
-    it('should verify email with valid token', async () => {
-      const validToken = 'valid-token';
+  describe('logout', () => {
+    it('should delete user sessions, clear cookie, and return success message', async () => {
+      const mockUser = { userId: '1', email: 'test@example.com' };
+      const mockReq: any = { user: mockUser };
+      const mockRes: any = {
+        clearCookie: jest.fn(),
+        json: jest.fn(),
+      };
+      mockPrisma.session.deleteMany = jest.fn().mockResolvedValue({ count: 1 });
 
+      await controller.logout(mockReq, mockRes);
+
+      expect(mockPrisma.session.deleteMany).toHaveBeenCalledWith({ where: { userId: '1' } });
+      expect(mockRes.clearCookie).toHaveBeenCalledWith('token', expect.objectContaining({ httpOnly: true }));
+      expect(mockRes.json).toHaveBeenCalledWith({ success: true, message: 'Logged out' });
+    });
+  });
+
+  describe('healthCheck', () => {
+    it('should return status ok', () => {
+      const result = controller.healthCheck();
+      expect(result).toEqual({ status: 'ok' });
+    });
+  });
+
+  describe('verifyEmail', () => {
+    it('should send HTML on success', async () => {
+      const validToken = 'valid-token';
       mockAuthService.verifyEmail.mockResolvedValueOnce({
         success: true,
         message: 'Email verified successfully',
       });
-
-      const result = await controller.verifyEmail(validToken);
-
+      const mockRes: any = {
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn(),
+      };
+      await controller.verifyEmail(validToken, mockRes);
       expect(mockAuthService.verifyEmail).toHaveBeenCalledWith(validToken);
-      expect(result).toEqual({
-        success: true,
-        message: 'Email verified successfully',
-      });
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Email Verified'));
     });
 
-    it('should throw NotFoundException for invalid token', async () => {
+    it('should send HTML error on failure', async () => {
       mockAuthService.verifyEmail.mockRejectedValueOnce(
         new NotFoundException('Invalid token'),
       );
-
-      await expect(controller.verifyEmail('invalid-token')).rejects.toThrow(
-        NotFoundException,
-      );
+      const mockRes: any = {
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn(),
+      };
+      await controller.verifyEmail('invalid-token', mockRes);
       expect(mockAuthService.verifyEmail).toHaveBeenCalledWith('invalid-token');
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Verification Failed'));
     });
   });
 });

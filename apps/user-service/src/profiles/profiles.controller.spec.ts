@@ -70,8 +70,10 @@ describe('ProfilesController', () => {
   });
 
   describe('getProfile()', () => {
+    const mockRequest = { user: { userId: '456' } };
+
     it('should return a profile when found', async () => {
-      const result = await controller.getProfile('123');
+      const result = await controller.getProfile('123', mockRequest);
       expect(result).toEqual({
         success: true,
         data: mockProfile,
@@ -79,16 +81,18 @@ describe('ProfilesController', () => {
       });
       expect(mockProfilesService.getProfileByUserId).toHaveBeenCalledWith(
         '123',
+        '456',
       );
     });
 
     it('should throw NotFoundException when profile not found', async () => {
       mockProfilesService.getProfileByUserId.mockResolvedValueOnce(null);
-      await expect(controller.getProfile('invalid-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.getProfile('invalid-id', mockRequest),
+      ).rejects.toThrow(NotFoundException);
       expect(mockProfilesService.getProfileByUserId).toHaveBeenCalledWith(
         'invalid-id',
+        '456',
       );
     });
   });

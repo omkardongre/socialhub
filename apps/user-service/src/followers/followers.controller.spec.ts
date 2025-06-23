@@ -13,8 +13,8 @@ const mockFollowersService = {
 };
 
 // Mock JwtPayload user
-const mockJwtPayload = (sub: string, email = 'test@example.com') => ({
-  sub,
+const mockJwtPayload = (userId: string, email = 'test@example.com') => ({
+  userId,
   email,
 });
 
@@ -75,7 +75,10 @@ describe('FollowersController', () => {
 
       const response = await controller.follow(user, targetUserId);
 
-      expect(service.followUser).toHaveBeenCalledWith(user.sub, targetUserId);
+      expect(service.followUser).toHaveBeenCalledWith(
+        user.userId,
+        targetUserId,
+      );
       expect(response).toEqual({
         success: true,
         data: mockResult,
@@ -92,7 +95,10 @@ describe('FollowersController', () => {
       await expect(controller.follow(user, targetUserId)).rejects.toThrow(
         BadRequestException,
       );
-      expect(service.followUser).toHaveBeenCalledWith(user.sub, targetUserId);
+      expect(service.followUser).toHaveBeenCalledWith(
+        user.userId,
+        targetUserId,
+      );
     });
   });
 
@@ -107,7 +113,10 @@ describe('FollowersController', () => {
 
       const response = await controller.unfollow(user, targetUserId);
 
-      expect(service.unfollowUser).toHaveBeenCalledWith(user.sub, targetUserId);
+      expect(service.unfollowUser).toHaveBeenCalledWith(
+        user.userId,
+        targetUserId,
+      );
       expect(response).toEqual({
         success: true,
         data: mockResult,

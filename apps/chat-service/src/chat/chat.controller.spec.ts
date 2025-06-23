@@ -8,6 +8,7 @@ import { ExecutionContext } from '@nestjs/common';
 const mockChatService = {
   getRoomMessages: jest.fn(),
   getUserRooms: jest.fn(),
+  createRoom: jest.fn(),
 };
 
 // Mock JwtAuthGuard
@@ -84,6 +85,43 @@ describe('ChatController', () => {
 
       await expect(controller.getUserRooms({ user: { userId } }))
         .rejects.toThrow(); // Now handled by global filter, will throw the original error
+    });
+  });
+
+  describe('createRoom', () => {
+    it('should create a new chat room', async () => {
+      const userId = 'user1';
+      const participants = ['user2'];
+      const room = { id: 'room3', participants: [userId, ...participants] };
+      const req = {
+        user: { userId },
+        headers: { authorization: 'Bearer token' },
+      };
+      service.createRoom.mockResolvedValue(room);
+
+      const result = await controller.createRoom(req, { participants });
+
+      expect(service.createRoom).toHaveBeenCalledWith(
+        [userId, ...participants],
+        'Bearer token',
+      );
+      expect(result).toEqual({
+        success: true,
+        data: room,
+        message: 'Chat room created successfully',
+      });
+    });
+
+    it('should throw an error if service fails', async () => {
+      const userId = 'user1';
+      const participants = ['user2'];
+      const req = {
+        user: { userId },
+        headers: { authorization: 'Bearer token' },
+      };
+      service.createRoom.mockRejectedValue(new Error('Failed'));
+
+      await expect(controller.createRoom(req, { participants })).rejects.toThrow();
     });
   });
 });

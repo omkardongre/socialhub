@@ -12,39 +12,41 @@ describe('FollowersService', () => {
   const mockFollowerRelation = {
     id: 'follow1',
     followerId: 'user1',
-    followingId: 'user2',
+    followedId: 'user2',
     createdAt: new Date(),
   };
 
   const mockFollowerList = [
     {
-      ...mockFollowerRelation,
       id: 'f1',
       followerId: 'user3',
+      followedId: 'user2',
+      createdAt: new Date(),
       follower: { id: 'user3', name: 'Follower 3' },
-    }, // Include mock follower data
+    },
     {
-      ...mockFollowerRelation,
       id: 'f2',
       followerId: 'user4',
+      followedId: 'user2',
+      createdAt: new Date(),
       follower: { id: 'user4', name: 'Follower 4' },
-    }, // Include mock follower data
+    },
   ];
 
   const mockFollowingList = [
     {
-      ...mockFollowerRelation,
-      id: 'f1',
-      followerId: 'user3',
-      followingId: 'user2',
-      follower: { id: 'user3', name: 'Follower 3' },
+      id: 'f3',
+      followerId: 'user1',
+      followedId: 'user5',
+      createdAt: new Date(),
+      followed: { id: 'user5', name: 'Followed 5' },
     },
     {
-      ...mockFollowerRelation,
-      id: 'f2',
-      followerId: 'user4',
-      followingId: 'user2',
-      follower: { id: 'user4', name: 'Follower 4' },
+      id: 'f4',
+      followerId: 'user1',
+      followedId: 'user6',
+      createdAt: new Date(),
+      followed: { id: 'user6', name: 'Followed 6' },
     },
   ];
 
@@ -156,6 +158,7 @@ describe('FollowersService', () => {
   describe('getFollowers', () => {
     it('should return a list of followers with follower details', async () => {
       const userId = 'user2'; // User whose followers we want
+      (prisma.follower.findMany as jest.Mock).mockResolvedValue(mockFollowerList);
       const result = await service.getFollowers(userId);
 
       expect(result).toEqual(mockFollowerList);
@@ -169,15 +172,15 @@ describe('FollowersService', () => {
 
   // --- Tests for getFollowing ---
   describe('getFollowing', () => {
-    it('should return a list of users being followed with following details', async () => {
+    it('should return a list of users being followed', async () => {
       const userId = 'user1'; // User whose following list we want
+      (prisma.follower.findMany as jest.Mock).mockResolvedValue(mockFollowingList);
       const result = await service.getFollowing(userId);
 
       expect(result).toEqual(mockFollowingList);
       expect(prisma.follower.findMany).toHaveBeenCalledTimes(1);
       expect(prisma.follower.findMany).toHaveBeenCalledWith({
         where: { followerId: userId },
-        include: { follower: true },
       });
     });
   });

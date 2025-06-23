@@ -31,6 +31,10 @@ describe('NotificationsController', () => {
 
     controller = module.get<NotificationsController>(NotificationsController);
     service = module.get<NotificationsService>(NotificationsService) as any;
+
+    // Suppress logger output for clean test results
+    jest.spyOn(controller['logger'], 'error').mockImplementation(() => {});
+
     jest.clearAllMocks();
   });
 
