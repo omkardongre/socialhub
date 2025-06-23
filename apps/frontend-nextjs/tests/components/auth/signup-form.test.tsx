@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SignupForm } from "./signup-form";
+import { SignupForm } from "@/components/auth/signup-form";
 
 // Helper to create a test QueryClient
 const createTestQueryClient = () =>

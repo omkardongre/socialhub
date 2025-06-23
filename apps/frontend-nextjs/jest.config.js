@@ -1,22 +1,21 @@
-module.exports = {
-  preset: 'ts-jest/presets/js-with-ts',
-  testEnvironment: 'jsdom',
+/* eslint-disable @typescript-eslint/no-require-imports */
+const nextJest = require("next/jest");
+
+// Create a Jest config that mimics the Next.js bundler and TS handling
+const createJestConfig = nextJest({
+  dir: "./", // path to the Next.js app
+});
+
+/** @type {import('jest').Config} */
+module.exports = createJestConfig({
+  testEnvironment: 'jest-environment-jsdom',
+  setupFilesAfterEnv: ["<rootDir>/setupTests.ts"],
   moduleNameMapper: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
-  setupFilesAfterEnv: ['<rootDir>/setupTests.ts'],
-  transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
-  },
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.jest.json',
-      useESM: false,
-    },
+    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+    "^@/(.*)$": "<rootDir>/src/$1",
   },
   testMatch: [
-    '<rootDir>/src/**/*.test.(ts|tsx)',
-    '<rootDir>/src/**/*.spec.(ts|tsx)'
+    "<rootDir>/src/**/*.(test|spec).(ts|tsx)",
+    "<rootDir>/tests/**/*.(test|spec).(ts|tsx)",
   ],
-};
+});
