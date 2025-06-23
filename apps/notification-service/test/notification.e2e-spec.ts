@@ -6,50 +6,42 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { NotificationType, EntityType } from '@prisma/client';
 import { getQueueToken } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 
 jest.setTimeout(30000);
 
-// This assumes your AppModule imports NotificationsModule and sets up global pipes etc.
 describe('NotificationsController (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let notificationQueue: Queue;
+  let notificationQueue: DeepMockProxy<Queue>;
 
-  // Clean up notifications and preferences for test users
-  const cleanDatabase = async (prismaInstance: PrismaService | undefined | null) => {
-    try {
-      if (
-        prismaInstance &&
-        typeof prismaInstance.notification?.deleteMany === 'function' &&
-        typeof prismaInstance.notificationPreference?.deleteMany === 'function'
-      ) {
-        await prismaInstance.notification.deleteMany({
-          where: { receiverId: { contains: 'e2e-user-' } },
-        });
-        await prismaInstance.notificationPreference.deleteMany({
-          where: { userId: { contains: 'e2e-user-' } },
-        });
-      }
-    } catch (err) {
-      console.error('Error during cleanDatabase:', err);
-    }
+  const cleanDatabase = async (prismaInstance: PrismaService) => {
+    await prismaInstance.notification.deleteMany({
+      where: { receiverId: { startsWith: 'e2e-user-' } },
+    });
+    await prismaInstance.notificationPreference.deleteMany({
+      where: { userId: { startsWith: 'e2e-user-' } },
+    });
   };
 
   beforeAll(async () => {
-    // Initial cleanup to ensure a clean state
-    const prismaTemp = new PrismaService();
+    const tempPrisma = new PrismaService();
     try {
-      await prismaTemp.$connect();
-      await cleanDatabase(prismaTemp);
-    } catch (error) {
-      console.error('Initial notification cleanup failed:', error);
+      await tempPrisma.$connect();
+      await cleanDatabase(tempPrisma);
+    } catch (e) {
+      console.error('Failed to connect to DB for initial cleanup. Aborting tests.', e);
+      throw e;
     } finally {
-      await prismaTemp.$disconnect();
+      await tempPrisma.$disconnect();
     }
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(getQueueToken('notification-queue'))
+      .useValue(mockDeep<Queue>())
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
@@ -61,33 +53,21 @@ describe('NotificationsController (e2e)', () => {
     notificationQueue = app.get(getQueueToken('notification-queue'));
   });
 
-  afterAll(async () => {
-    try {
-      if (prisma) {
-        await cleanDatabase(prisma);
-      }
-    } catch (error) {
-      console.error('Notification cleanup failed:', error);
-    } finally {
-      if (notificationQueue) {
-        // Force close all Redis connections (client, subscriber, etc.)
-        await notificationQueue.close(true);
-      }
-      // Explicitly close all microservices if any are running
-      if (typeof app.getMicroservices === 'function') {
-        for (const ms of app.getMicroservices()) {
-          if (typeof ms.close === 'function') {
-            await ms.close();
-          }
-        }
-      }
-      if (app) {
-        await app.close();
-      }
-      if (prisma) {
-        await prisma.$disconnect();
-      }
+  beforeEach(() => {
+    if (notificationQueue) {
+      notificationQueue.add.mockClear();
     }
+  });
+
+  afterEach(async () => {
+    if (prisma) {
+      await cleanDatabase(prisma);
+    }
+  });
+
+  afterAll(async () => {
+    await app?.close();
+    await prisma?.$disconnect();
   });
 
   describe('/notifications/health (GET)', () => {
@@ -106,15 +86,24 @@ describe('NotificationsController (e2e)', () => {
   describe('/notifications/preferences (POST)', () => {
     it('should create default preferences', async () => {
       const userId = 'e2e-user-' + Date.now();
-      const res = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .post('/notifications/preferences')
         .send({ userId })
-        .expect(201);
-      expect(res.body).toEqual({ success: true });
-      // Clean up
-      await prisma.notificationPreference.delete({ where: { userId } });
+        .expect(201)
+        .then(res => {
+          expect(res.body).toEqual({ success: true });
+        });
+
+      const preference = await prisma.notificationPreference.findUnique({
+        where: { userId },
+      });
+      expect(preference).not.toBeNull();
+      if (preference) {
+        expect(preference.userId).toBe(userId);
+      }
     });
   });
+
 
   describe('/notifications/:id/read (PUT)', () => {
     it('should mark notification as read', async () => {
@@ -137,9 +126,32 @@ describe('NotificationsController (e2e)', () => {
         .send({ isRead: true })
         .expect(200);
       expect(res.body.isRead).toBe(true);
-      // Clean up
-      await prisma.notification.deleteMany({ where: { id: notification.id } });
-      await prisma.notificationPreference.deleteMany({ where: { userId } });
+
+      const updatedNotification = await prisma.notification.findUnique({
+        where: { id: notification.id },
+      });
+      expect(updatedNotification).not.toBeNull();
+      if (updatedNotification) {
+        expect(updatedNotification.isRead).toBe(true);
+      }
+    });
+  });
+
+  describe('/notifications/test-queue (GET)', () => {
+    it('should add a job to the notification queue', async () => {
+      await request(app.getHttpServer())
+        .get('/notifications/test-queue')
+        .expect(200);
+
+      expect(notificationQueue.add).toHaveBeenCalledTimes(1);
+      expect(notificationQueue.add).toHaveBeenCalledWith(
+        'send-notification',
+        {
+          userEmail: 'omkardongre5@gmail.com',
+          type: 'USER_FOLLOWED',
+          payload: expect.any(Object),
+        },
+      );
     });
   });
 });

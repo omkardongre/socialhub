@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProfilesService } from './profiles.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException } from '@nestjs/common';
+import { Logger, NotFoundException } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 // Mock PrismaService directly
@@ -53,7 +53,7 @@ describe('ProfilesService', () => {
   describe('getProfileByUserId', () => {
     it('should return profile when exists', async () => {
       const result = await service.getProfileByUserId('123');
-      expect(result).toEqual(mockProfile);
+      expect(result).toEqual({ ...mockProfile, isFollowing: false });
       expect(prisma.profile.findUnique).toHaveBeenCalledWith({
         where: { userId: '123' },
       });
@@ -93,6 +93,7 @@ describe('ProfilesService', () => {
     });
 
     it('should throw InternalServerErrorException for unknown errors', async () => {
+      const loggerSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
       const testError = new Error('Database error');
       // Set mock implementation for this specific test
       (prisma.profile.update as jest.Mock).mockRejectedValue(testError);
@@ -102,6 +103,7 @@ describe('ProfilesService', () => {
           name: 'InternalServerErrorException',
         }),
       );
+      loggerSpy.mockRestore();
     });
   });
 
@@ -151,6 +153,7 @@ describe('ProfilesService', () => {
     });
 
     it('should throw InternalServerErrorException for unknown errors', async () => {
+      const loggerSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
       const { InternalServerErrorException } = require('@nestjs/common');
       (prisma.$transaction as jest.Mock).mockImplementation(() => {
         throw new Error('Unexpected error');
@@ -158,6 +161,7 @@ describe('ProfilesService', () => {
       await expect(
         service.createProfile(mockCreateProfileDto as any),
       ).rejects.toThrow(InternalServerErrorException);
+      loggerSpy.mockRestore();
     });
   });
 });

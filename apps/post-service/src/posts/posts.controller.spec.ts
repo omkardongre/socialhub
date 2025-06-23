@@ -45,19 +45,23 @@ describe('PostsController', () => {
   describe('create', () => {
     it('should create a post and return it', async () => {
       const createPostDto: CreatePostDto = {
-        userId: 'user1',
         content: 'Test Content',
       };
+      const mockReq = { user: { userId: 'user1' } };
       const mockPost = {
         id: 'post1',
-        ...createPostDto,
+        userId: 'user1',
+        content: 'Test Content',
         createdAt: new Date(),
       };
       mockPostsService.create.mockResolvedValue(mockPost);
 
-      const result = await controller.create(createPostDto);
+      const result = await controller.create(createPostDto, mockReq as any);
 
-      expect(service.create).toHaveBeenCalledWith(createPostDto);
+      expect(service.create).toHaveBeenCalledWith({
+        ...createPostDto,
+        userId: 'user1',
+      });
       expect(result).toEqual({
         success: true,
         data: mockPost,
@@ -145,17 +149,24 @@ describe('PostsController', () => {
 
   describe('getFeed', () => {
     it('should get the feed for a user and return it', async () => {
-      const mockReq = { user: { userId: 'user1' } } as any; // Mock Express Request
+      const mockReq = {
+        user: { userId: 'user1' },
+        headers: { authorization: 'Bearer test-token' },
+      } as any;
       const query: FeedQueryDto = { limit: '10', offset: '0' };
       const expectedFeedData = [{ id: 'post1', content: 'Feed post' }];
       mockPostsService.getFeed.mockResolvedValue(expectedFeedData);
 
       const result = await controller.getFeed(mockReq, query);
 
-      expect(service.getFeed).toHaveBeenCalledWith('user1', {
-        limit: 10,
-        offset: 0,
-      });
+      expect(service.getFeed).toHaveBeenCalledWith(
+        'user1',
+        {
+          limit: 10,
+          offset: 0,
+        },
+        'Bearer test-token',
+      );
       expect(result).toEqual({
         success: true,
         data: expectedFeedData,
@@ -164,17 +175,24 @@ describe('PostsController', () => {
     });
 
     it('should use default limit and offset if not provided in query', async () => {
-      const mockReq = { user: { userId: 'user1' } } as any;
+      const mockReq = {
+        user: { userId: 'user1' },
+        headers: { authorization: 'Bearer test-token' },
+      } as any;
       const query: FeedQueryDto = {}; // Empty query
       const expectedFeedData = [{ id: 'post2', content: 'Another feed post' }];
       mockPostsService.getFeed.mockResolvedValue(expectedFeedData);
 
       const result = await controller.getFeed(mockReq, query);
 
-      expect(service.getFeed).toHaveBeenCalledWith('user1', {
-        limit: 10,
-        offset: 0,
-      }); // Expect defaults
+      expect(service.getFeed).toHaveBeenCalledWith(
+        'user1',
+        {
+          limit: 10,
+          offset: 0,
+        },
+        'Bearer test-token',
+      ); // Expect defaults
       expect(result).toEqual({
         success: true,
         data: expectedFeedData,

@@ -47,6 +47,12 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         {
+          provide: require('../sendgrid/sendgrid.service').SendGridService,
+          useValue: {
+            sendEmail: jest.fn().mockResolvedValue({ success: true }),
+          },
+        },
+        {
           provide: PrismaService,
           useValue: {
             user: {

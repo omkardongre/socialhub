@@ -44,6 +44,13 @@ describe('NotificationsService', () => {
     service = module.get<NotificationsService>(NotificationsService);
     prisma = module.get<PrismaService>(PrismaService) as any;
     queue = module.get('BullQueue_notification-queue') as any;
+
+    // Suppress logger output for clean test results
+    jest.spyOn(service['logger'], 'error').mockImplementation(() => {});
+    jest.spyOn(service['logger'], 'warn').mockImplementation(() => {});
+    jest.spyOn(service['logger'], 'log').mockImplementation(() => {});
+    jest.spyOn(service['logger'], 'debug').mockImplementation(() => {});
+
     jest.clearAllMocks();
   });
 
