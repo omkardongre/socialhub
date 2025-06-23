@@ -1,11 +1,5 @@
 # --- ECS Task Definitions ---
 
-locals {
-  log_group_name = aws_cloudwatch_log_group.ecs.name
-  repo_creds_arn = var.repo_creds_arn
-  env_files_bucket = var.env_files_bucket
-}
-
 resource "aws_ecs_task_definition" "auth_service" {
   family                   = "auth-service-task"
   network_mode             = "bridge"

@@ -50,4 +50,11 @@ module "ecs" {
   public_subnet_a_id = module.vpc.public_subnet_a_id
   env_files_bucket   = module.env_files.bucket_name
   repo_creds_arn     = module.ghcr_secret.arn
+  auth_service_image_tag         = "test"
+  user_service_image_tag         = "test"
+  post_service_image_tag         = "test"
+  notification_service_image_tag = "test"
+  chat_service_image_tag         = "test"
+  api_gateway_image_tag          = "test"
+  media_service_image_tag        = "test"
 }

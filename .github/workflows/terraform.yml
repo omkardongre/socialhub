@@ -19,41 +19,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download image tag artifact (auth-service)
-        uses: actions/download-artifact@v4
-        with:
-          name: auth-service-image-tag
-          path: .
-      - name: Download image tag artifact (user-service)
-        uses: actions/download-artifact@v4
-        with:
-          name: user-service-image-tag
-          path: .
-      - name: Download image tag artifact (post-service)
-        uses: actions/download-artifact@v4
-        with:
-          name: post-service-image-tag
-          path: .
-      - name: Download image tag artifact (notification-service)
-        uses: actions/download-artifact@v4
-        with:
-          name: notification-service-image-tag
-          path: .
-      - name: Download image tag artifact (chat-service)
-        uses: actions/download-artifact@v4
-        with:
-          name: chat-service-image-tag
-          path: .
-      - name: Download image tag artifact (media-service)
-        uses: actions/download-artifact@v4
-        with:
-          name: media-service-image-tag
-          path: .
-      - name: Download image tag artifact (api-gateway)
-        uses: actions/download-artifact@v4
-        with:
-          name: api-gateway-image-tag
-          path: .
+      - name: Download image tag artifacts using GitHub REST API
+        env:
+          GH_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -e
+          SERVICES=(auth-service user-service post-service notification-service chat-service media-service api-gateway)
+          for SERVICE in "${SERVICES[@]}"; do
+            ARTIFACT_NAME="${SERVICE}-image-tag"
+            echo "Fetching artifact $ARTIFACT_NAME from workflow run $RUN_ID..."
+            ARTIFACTS_JSON=$(curl -s -H "Authorization: token $GH_TOKEN" \
+              "https://api.github.com/repos/$REPO/actions/runs/$RUN_ID/artifacts")
+            ARTIFACT_ID=$(echo "$ARTIFACTS_JSON" | jq -r ".artifacts[] | select(.name==\"$ARTIFACT_NAME\") | .id")
+            if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" == "null" ]; then
+              echo "Artifact $ARTIFACT_NAME not found, skipping."
+              continue
+            fi
+            curl -L -H "Authorization: token $GH_TOKEN" \
+              -o "$ARTIFACT_NAME.zip" \
+              "https://api.github.com/repos/$REPO/actions/artifacts/$ARTIFACT_ID/zip"
+            unzip -o "$ARTIFACT_NAME.zip" -d "$ARTIFACT_NAME" && rm "$ARTIFACT_NAME.zip"
+            # Move image-tag.txt to root for compatibility
+            if [ -f "$ARTIFACT_NAME/image-tag.txt" ]; then
+              mv "$ARTIFACT_NAME/image-tag.txt" "$ARTIFACT_NAME-image-tag.txt"
+              rm -rf "$ARTIFACT_NAME"
+            fi
+          done
+
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
