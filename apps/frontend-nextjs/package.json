@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest --passWithNoTests"
+    "test:unit": "jest --passWithNoTests",
+    "test:e2e": "echo 'No integration tests yet' && exit 0",
+    "test": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.11",
