@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import ChatShell from "@/components/chat/ChatShell";
 
 // Mock ChatSidebar, ChatClient, ChatLayout to observe render
@@ -14,10 +14,12 @@ jest.mock("@/components/chat/ChatLayout", () => ({ __esModule: true, default: ({
 afterEach(() => jest.clearAllMocks());
 
 describe("ChatShell", () => {
-  it("renders sidebar and chat client via layout", () => {
+  it("renders sidebar and chat client via layout", async () => {
     const { getByTestId } = render(
       <ChatShell initialRooms={[]} setRooms={jest.fn()} />
     );
-    expect(getByTestId("sidebar")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(getByTestId("sidebar")).toBeInTheDocument();
+    });
   });
 });

@@ -10,10 +10,10 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: () => currentRoomId }),
 }));
 
-// mock next/dynamic to just return component
-jest.mock("next/dynamic", () => () => (importFunc: any, _opts?: any) => {
-  const Comp = () => null;
-  return Comp;
+// mock next/dynamic to return a dummy component
+jest.mock("next/dynamic", () => (importFunc: any, _opts?: any) => {
+  // Just return a dummy component
+  return () => null;
 });
 
 // mock NewChatModal (path alias using jest automatic) – fallback if loaded

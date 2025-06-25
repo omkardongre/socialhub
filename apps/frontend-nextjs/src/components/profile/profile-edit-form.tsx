@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { api } from "@/lib/axios";
 import { toast } from "sonner";
@@ -113,6 +114,9 @@ export function ProfileEditForm({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
+          <DialogDescription>
+            Update your profile details below. Name and bio are required.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

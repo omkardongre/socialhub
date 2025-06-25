@@ -16,11 +16,15 @@ jest.mock("next/image", () => (props: any) => {
 jest.mock("@/components/ui/dropdown-menu", () => ({
   __esModule: true,
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
-  DropdownMenuTrigger: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuTrigger: (props: any) => {
+    const { children, asChild, ...rest } = props;
+    return <div {...rest}>{children}</div>;
+  },
   DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
-  DropdownMenuItem: ({ children, ...rest }: any) => (
-    <div {...rest}>{children}</div>
-  ),
+  DropdownMenuItem: (props: any) => {
+    const { children, asChild, ...rest } = props;
+    return <div {...rest}>{children}</div>;
+  },
   DropdownMenuSeparator: () => <hr />,
 }));
 

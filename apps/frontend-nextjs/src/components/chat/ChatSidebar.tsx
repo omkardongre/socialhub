@@ -15,6 +15,7 @@ const NewChatModal = dynamic(() => import("./NewChatModal"), {
 });
 import { api } from "@/lib/axios";
 
+// Note: Only use initialRooms and onNewRoom within this component. Do not pass them to DOM elements to avoid React warnings.
 export default function ChatSidebar({
   initialRooms,
   onNewRoom,
