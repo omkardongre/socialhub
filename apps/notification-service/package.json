@@ -14,7 +14,7 @@
     "start:prod": "node dist/apps/notification-service/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "jest --config jest.config.js",
+    "test:unit": "dotenv -e .env.unit-test -- jest --config jest.config.js",
     "test:e2e": "dotenv -e .env.test.e2e -- jest --config ./test/jest-e2e.json",
     "test:watch": "npm run test:unit -- --watch",
     "test:ci": "npm run test:unit:ci && npm run test:e2e:ci",
