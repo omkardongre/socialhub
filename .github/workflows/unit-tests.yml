@@ -1,0 +1,40 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: ["main", "develop", "feature/**"]
+  pull_request:
+    branches: ["main", "develop", "feature/**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app:
+          - frontend-nextjs
+          - auth-service
+          - chat-service
+          - media-service
+          - notification-service
+          - post-service
+          - user-service
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma Client
+        if: matrix.app != 'frontend-nextjs'
+        run: npx prisma generate
+      - name: Run Unit Tests
+        run: npm run test:unit

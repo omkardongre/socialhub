@@ -6,22 +6,16 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "dotenv -e .env.unit-test -- jest --config jest.config.js",
-    "test:e2e": "dotenv -e .env.test.e2e -- jest --config ./test/jest-e2e.json",
-    "test:watch": "npm run test:unit -- --watch",
-    "test:ci": "npm run test:unit:ci && npm run test:e2e:ci",
-    "test:unit:ci": "jest --config jest.config.js --runInBand --detectOpenHandles --ci",
-    "test:e2e:ci": "dotenv -e .env.test.e2e -- jest --config ./test/jest-e2e.json --runInBand --ci",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "dotenv -e .env.unit-test -- jest --config jest.config.js",
+    "test:e2e": "dotenv -e .env.test.e2e -- jest --config ./test/jest-e2e.json",
+    "test:cov": "jest --coverage"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.804.0",
