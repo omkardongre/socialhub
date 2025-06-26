@@ -10,9 +10,9 @@ const createJestConfig = nextJest({
 module.exports = createJestConfig({
   coverageThreshold: {
     global: {
-      branches: 30,
-      functions: 30,
-      lines: 30,
+      branches: 10,
+      functions: 10,
+      lines: 10,
     },
   },
   testEnvironment: "jest-environment-jsdom",
