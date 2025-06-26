@@ -38,3 +38,8 @@ jobs:
         run: npx prisma generate
       - name: Run Unit Tests
         run: npm run test:unit
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: apps/${{ matrix.app }}/coverage/lcov.info
+          flags: ${{ matrix.app }}
