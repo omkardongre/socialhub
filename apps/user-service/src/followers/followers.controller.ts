@@ -41,7 +41,6 @@ export class FollowersController {
   @ApiOperation({ summary: 'Follow a user' })
   @ApiResponse({ status: 201, description: 'User followed' })
   async follow(@CurrentUser() user, @Param('id') userId: string) {
-    console.log(' user ' + user.userId + ' following ' + userId);
     const result = await this.followersService.followUser(user.userId, userId);
     return {
       success: true,
@@ -56,7 +55,6 @@ export class FollowersController {
   @ApiResponse({ status: 200, description: 'User unfollowed' })
   async unfollow(@CurrentUser() user, @Param('id') userId: string) {
     try {
-      console.log(' user ' + user.userId + ' following ' + userId);
       const result = await this.followersService.unfollowUser(
         user.userId,
         userId,

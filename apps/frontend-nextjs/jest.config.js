@@ -8,7 +8,14 @@ const createJestConfig = nextJest({
 
 /** @type {import('jest').Config} */
 module.exports = createJestConfig({
-  testEnvironment: 'jest-environment-jsdom',
+  coverageThreshold: {
+    global: {
+      branches: 30,
+      functions: 30,
+      lines: 30,
+    },
+  },
+  testEnvironment: "jest-environment-jsdom",
   setupFilesAfterEnv: ["<rootDir>/setupTests.ts"],
   moduleNameMapper: {
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",

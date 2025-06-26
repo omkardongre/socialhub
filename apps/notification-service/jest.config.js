@@ -8,6 +8,13 @@ module.exports = {
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
+  coverageThreshold: {
+    global: {
+      branches: 30,
+      functions: 30,
+      lines: 30,
+    },
+  },
   moduleNameMapper: {
     '^src/(.*)$': '<rootDir>/$1',
     '^@libs/events$': '<rootDir>/../../../libs/events',
