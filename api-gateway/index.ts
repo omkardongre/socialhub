@@ -33,8 +33,8 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "http://10.0.1.101:3000",
-  "http://44.220.89.169:3000" // (add your public frontend if needed)
+  "https://socialhub.omkard.site",
+  "socialhub-bxqn183k8-omkardongres-projects.vercel.app",
 ];
 
 app.use(
