@@ -30,7 +30,7 @@ export const UserSearchInputForDiscovery: React.FC = () => {
       {!loading && results.length > 0 && (
         <Card className="mb-2">
           <CardContent className="p-0">
-            <ScrollArea className="max-h-60">
+            <ScrollArea className="max-h-60" data-testid="user-search-results">
               <ul className="divide-y divide-gray-200">
                 {results.map((user) => (
                   <li key={user.id}>

@@ -9,6 +9,11 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { toast } from "sonner";
+import { AxiosError } from "axios";
+
+interface ApiErrorResponse {
+  message: string;
+}
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -23,7 +28,15 @@ export function LoginForm() {
       toast.success("Login successful! Redirecting...");
       setTimeout(() => router.push("/feed"), 1000);
     },
-    // onError handled globally by Axios interceptor
+    onError: (error: AxiosError) => {
+      let errorMessage = "An unexpected error occurred.";
+      if (error.response && (error.response.data as ApiErrorResponse).message) {
+        errorMessage = (error.response.data as ApiErrorResponse).message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      toast.error(`Login failed: ${errorMessage}`);
+    },
   });
 
   return (
