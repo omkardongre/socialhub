@@ -38,6 +38,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(env.PORT);
-  console.log(`Auth Service is running on port ${env.PORT}`);
+  console.log(`Auth Service is running on port ${env.PORT} omkar dongre1`);
 }
 bootstrap();
+// added comment for testing4

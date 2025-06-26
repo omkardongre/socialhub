@@ -48,3 +48,16 @@ resource "aws_s3_bucket_policy" "media_policy" {
     ]
   })
 }
+
+resource "aws_s3_bucket_cors_configuration" "media_cors" {
+  bucket = aws_s3_bucket.media.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+    allowed_origins = ["https://socialhub.omkard.site"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+

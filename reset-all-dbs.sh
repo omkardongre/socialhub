@@ -1,23 +1,27 @@
 #!/bin/bash
 
-# Define your service DBs with Neon.tech credentials
-declare -A DBS=(
-  # Format: [service_name]="db_name:user:password:host:port"
-  [auth_service]="auth-service:neondb_owner:npg_UKna9Iit3cMD:ep-jolly-night-a8bmygrq.eastus2.azure.neon.tech:5432"
-  [user_service]="user-service:neondb_owner:npg_UKna9Iit3cMD:ep-jolly-night-a8bmygrq.eastus2.azure.neon.tech:5432"
-  [post_service]="post-service:neondb_owner:npg_UKna9Iit3cMD:ep-jolly-night-a8bmygrq.eastus2.azure.neon.tech:5432"
-  [notification_service]="notification-service:neondb_owner:npg_UKna9Iit3cMD:ep-jolly-night-a8bmygrq.eastus2.azure.neon.tech:5432"
-  [media_service]="media-service:neondb_owner:npg_UKna9Iit3cMD:ep-jolly-night-a8bmygrq.eastus2.azure.neon.tech:5432"
-  [chat_service]="chat-service:neondb_owner:npg_UKna9Iit3cMD:ep-jolly-night-a8bmygrq.eastus2.azure.neon.tech:5432"
-)
+# Set your DATABASE_URL here (example format, any one DB is fine)
+DATABASE_URL="postgresql://postgres:8446111598@socialhub-db.c6vgo2qoy65o.us-east-1.rds.amazonaws.com:5432/auth_db?sslmode=require"
 
-# Add SSL mode to connection string
+# List all your databases here (from your Terraform)
+DATABASES=(auth_db user_db post_db notification_db media_db chat_db)
+
+# Parse the DATABASE_URL
+regex="^postgres(ql)?://([^:]+):([^@]+)@([^:/]+):([0-9]+)/([^?]+)"
+if [[ $DATABASE_URL =~ $regex ]]; then
+  USER="${BASH_REMATCH[2]}"
+  PASS="${BASH_REMATCH[3]}"
+  HOST="${BASH_REMATCH[4]}"
+  PORT="${BASH_REMATCH[5]}"
+else
+  echo "❌ Could not parse DATABASE_URL"
+  exit 1
+fi
+
 export PGSSLMODE="require"
 
-for service in "${!DBS[@]}"; do
-  IFS=':' read -r DB USER PASS HOST PORT <<< "${DBS[$service]}"
-  echo "Resetting $service ($DB)..."
-  
+for DB in "${DATABASES[@]}"; do
+  echo "Resetting all tables in database $DB on $HOST..."
   PGPASSWORD="$PASS" psql -h "$HOST" -U "$USER" -d "$DB" -p "$PORT" -c "
     DO \$\$ DECLARE
         r RECORD;
@@ -32,7 +36,7 @@ for service in "${!DBS[@]}"; do
         END LOOP;
     END \$\$;
   "
-  echo "✅ $service reset complete"
+  echo "✅ Database $DB reset complete"
   echo "----------------------------------------"
 done
 

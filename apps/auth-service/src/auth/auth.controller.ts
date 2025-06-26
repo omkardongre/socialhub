@@ -68,11 +68,13 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res() res: Response) {
     const tokens = await this.authService.login(dto);
 
+    console.log('tokens for testing', tokens);
     // Set access token as HttpOnly cookie
     res.cookie('token', tokens.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
+      domain: '.omkard.site',
       path: '/',
       maxAge: 10 * 24 * 60 * 60 * 1000, // 10 days
     });
@@ -159,8 +161,9 @@ export class AuthController {
     });
     res.clearCookie('token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
+      domain: '.omkard.site',
       path: '/',
     });
 

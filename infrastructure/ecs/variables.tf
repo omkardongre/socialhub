@@ -37,7 +37,7 @@ variable "ecs_task_cpu" {
 variable "ecs_task_memory" {
   description = "Default memory for ECS tasks"
   type        = string
-  default     = "160"
+  default     = "136"
 }
 
 variable "awslogs_region" {
@@ -75,7 +75,6 @@ variable "ecs_instance_type" {
 variable "key_name" {
   description = "EC2 Key Pair name"
   type        = string
-  default     = "socialhub-key"
 }
 
 variable "repo_creds_arn" {
