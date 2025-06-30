@@ -1,4 +1,4 @@
-name: Terraform Infra CIAdd commentMore actions
+name: Terraform Infra CI
 
 on:
   workflow_run:
@@ -15,6 +15,15 @@ jobs:
       run:
         working-directory: infrastructure
 
+    outputs:
+      AUTH: ${{ steps.tags.outputs.AUTH }}
+      USER: ${{ steps.tags.outputs.USER }}
+      POST: ${{ steps.tags.outputs.POST }}
+      NOTIFY: ${{ steps.tags.outputs.NOTIFY }}
+      CHAT: ${{ steps.tags.outputs.CHAT }}
+      MEDIA: ${{ steps.tags.outputs.MEDIA }}
+      API: ${{ steps.tags.outputs.API }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,6 +35,9 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -e
+          echo "Working directory: $(pwd)"
+          echo "Files before download:"
+          ls -alh
           SERVICES=(auth-service user-service post-service notification-service chat-service media-service api-gateway)
           for SERVICE in "${SERVICES[@]}"; do
             ARTIFACT_NAME="${SERVICE}-image-tag"
@@ -40,13 +52,27 @@ jobs:
             curl -L -H "Authorization: token $GH_TOKEN" \
               -o "$ARTIFACT_NAME.zip" \
               "https://api.github.com/repos/$REPO/actions/artifacts/$ARTIFACT_ID/zip"
+            echo "Files after download of $ARTIFACT_NAME.zip:"
+            ls -alh
             unzip -o "$ARTIFACT_NAME.zip" -d "$ARTIFACT_NAME" && rm "$ARTIFACT_NAME.zip"
+            echo "Files after unzip $ARTIFACT_NAME.zip:"
+            ls -alh "$ARTIFACT_NAME"
             # Move image-tag.txt to root for compatibility
             if [ -f "$ARTIFACT_NAME/image-tag.txt" ]; then
-              mv "$ARTIFACT_NAME/image-tag.txt" "$ARTIFACT_NAME-image-tag.txt"
+              mv "$ARTIFACT_NAME/image-tag.txt" "${SERVICE}-image-tag.txt"
               rm -rf "$ARTIFACT_NAME"
             fi
+            # Log the contents to verify correctness
+            if [ -f "${SERVICE}-image-tag.txt" ]; then
+              echo "${SERVICE}-image-tag.txt contents:"
+              cat "${SERVICE}-image-tag.txt"
+            else
+              echo "File ${SERVICE}-image-tag.txt NOT FOUND after move!"
+            fi
           done
+          echo "Files at end of download step:"
+          ls -alh
+
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -55,16 +81,47 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
 
       - name: Terraform Validate
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -no-color
+        run: |
+          terraform plan -no-color \
+            -var="ghcr_username=${{ secrets.GHCR_USERNAME }}" \
+            -var="ghcr_pat=${{ secrets.GHCR_PAT }}" \
+            -var="db_username=${{ secrets.DB_USERNAME }}" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -var="auth_service_image_tag=$AUTH" \
+            -var="user_service_image_tag=$USER" \
+            -var="post_service_image_tag=$POST" \
+            -var="notification_service_image_tag=$NOTIFY" \
+            -var="chat_service_image_tag=$CHAT" \
+            -var="media_service_image_tag=$MEDIA" \
+            -var="api_gateway_image_tag=$API"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
 
       - name: Set image tag variables with fallback
         id: tags
         run: |
+          echo "Working directory before get_tag: $(pwd)"
+          echo "Files before get_tag:"
+          ls -alh
+          for f in auth-service-image-tag.txt user-service-image-tag.txt post-service-image-tag.txt notification-service-image-tag.txt chat-service-image-tag.txt media-service-image-tag.txt api-gateway-image-tag.txt; do
+            if [ -f "$f" ]; then
+              echo "$f contents:"
+              cat "$f"
+            else
+              echo "$f does not exist"
+            fi
+          done
           get_tag() {
             local file="$1"
             local fallback="$2"
@@ -74,27 +131,46 @@ jobs:
               echo "$fallback"
             fi
           }
-          echo "AUTH=$(get_tag auth-service-image-tag/image-tag.txt ${{ secrets.LAST_AUTH_SERVICE_IMAGE_TAG }})" >> $GITHUB_ENV
-          echo "USER=$(get_tag user-service-image-tag/image-tag.txt ${{ secrets.LAST_USER_SERVICE_IMAGE_TAG }})" >> $GITHUB_ENV
-          echo "POST=$(get_tag post-service-image-tag/image-tag.txt ${{ secrets.LAST_POST_SERVICE_IMAGE_TAG }})" >> $GITHUB_ENV
-          echo "NOTIFY=$(get_tag notification-service-image-tag/image-tag.txt ${{ secrets.LAST_NOTIFICATION_SERVICE_IMAGE_TAG }})" >> $GITHUB_ENV
-          echo "CHAT=$(get_tag chat-service-image-tag/image-tag.txt ${{ secrets.LAST_CHAT_SERVICE_IMAGE_TAG }})" >> $GITHUB_ENV
-          echo "MEDIA=$(get_tag media-service-image-tag/image-tag.txt ${{ secrets.LAST_MEDIA_SERVICE_IMAGE_TAG }})" >> $GITHUB_ENV
-          echo "API=$(get_tag api-gateway-image-tag/image-tag.txt ${{ secrets.LAST_API_GATEWAY_IMAGE_TAG }})" >> $GITHUB_ENV
+          echo "AUTH=$(get_tag auth-service-image-tag.txt ${{ secrets.LAST_AUTH_SERVICE_IMAGE_TAG }})" | tee -a $GITHUB_ENV
+          echo "USER=$(get_tag user-service-image-tag.txt ${{ secrets.LAST_USER_SERVICE_IMAGE_TAG }})" | tee -a $GITHUB_ENV
+          echo "POST=$(get_tag post-service-image-tag.txt ${{ secrets.LAST_POST_SERVICE_IMAGE_TAG }})" | tee -a $GITHUB_ENV
+          echo "NOTIFY=$(get_tag notification-service-image-tag.txt ${{ secrets.LAST_NOTIFICATION_SERVICE_IMAGE_TAG }})" | tee -a $GITHUB_ENV
+          echo "CHAT=$(get_tag chat-service-image-tag.txt ${{ secrets.LAST_CHAT_SERVICE_IMAGE_TAG }})" | tee -a $GITHUB_ENV
+          echo "MEDIA=$(get_tag media-service-image-tag.txt ${{ secrets.LAST_MEDIA_SERVICE_IMAGE_TAG }})" | tee -a $GITHUB_ENV
+          echo "API=$(get_tag api-gateway-image-tag.txt ${{ secrets.LAST_API_GATEWAY_IMAGE_TAG }})" | tee -a $GITHUB_ENV
+          # Export as job outputs
+          echo "AUTH=$(get_tag auth-service-image-tag.txt ${{ secrets.LAST_AUTH_SERVICE_IMAGE_TAG }})" >> $GITHUB_OUTPUT
+          echo "USER=$(get_tag user-service-image-tag.txt ${{ secrets.LAST_USER_SERVICE_IMAGE_TAG }})" >> $GITHUB_OUTPUT
+          echo "POST=$(get_tag post-service-image-tag.txt ${{ secrets.LAST_POST_SERVICE_IMAGE_TAG }})" >> $GITHUB_OUTPUT
+          echo "NOTIFY=$(get_tag notification-service-image-tag.txt ${{ secrets.LAST_NOTIFICATION_SERVICE_IMAGE_TAG }})" >> $GITHUB_OUTPUT
+          echo "CHAT=$(get_tag chat-service-image-tag.txt ${{ secrets.LAST_CHAT_SERVICE_IMAGE_TAG }})" >> $GITHUB_OUTPUT
+          echo "MEDIA=$(get_tag media-service-image-tag.txt ${{ secrets.LAST_MEDIA_SERVICE_IMAGE_TAG }})" >> $GITHUB_OUTPUT
+          echo "API=$(get_tag api-gateway-image-tag.txt ${{ secrets.LAST_API_GATEWAY_IMAGE_TAG }})" >> $GITHUB_OUTPUT
+
+      - name: Debug Print tag values from GITHUB_ENV
+        run: |
+          echo "AUTH: $AUTH"
+          echo "USER: $USER"
+          echo "POST: $POST"
+          echo "NOTIFY: $NOTIFY"
+          echo "CHAT: $CHAT"
+          echo "MEDIA: $MEDIA"
+          echo "API: $API"
 
       - name: Terraform Apply (auto-approved)
-        run: terraform apply -auto-approve \
-          -var="ghcr_username=${{ secrets.GHCR_USERNAME }}" \
-          -var="ghcr_pat=${{ secrets.GHCR_PAT }}" \
-          -var="db_username=${{ secrets.DB_USERNAME }}" \
-          -var="db_password=${{ secrets.DB_PASSWORD }}" \
-          -var="auth_service_image_tag=$AUTH" \
-          -var="user_service_image_tag=$USER" \
-          -var="post_service_image_tag=$POST" \
-          -var="notification_service_image_tag=$NOTIFY" \
-          -var="chat_service_image_tag=$CHAT" \
-          -var="media_service_image_tag=$MEDIA" \
-          -var="api_gateway_image_tag=$API"
+        run: |
+          terraform apply -auto-approve \
+            -var="ghcr_username=${{ secrets.GHCR_USERNAME }}" \
+            -var="ghcr_pat=${{ secrets.GHCR_PAT }}" \
+            -var="db_username=${{ secrets.DB_USERNAME }}" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -var="auth_service_image_tag=$AUTH" \
+            -var="user_service_image_tag=$USER" \
+            -var="post_service_image_tag=$POST" \
+            -var="notification_service_image_tag=$NOTIFY" \
+            -var="chat_service_image_tag=$CHAT" \
+            -var="media_service_image_tag=$MEDIA" \
+            -var="api_gateway_image_tag=$API"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -105,19 +181,36 @@ jobs:
     runs-on: ubuntu-latest
     if: success()
     steps:
+      - name: Debug Print tag values
+        run: |
+          echo "AUTH: $AUTH"
+          echo "USER: $USER"
+          echo "POST: $POST"
+          echo "NOTIFY: $NOTIFY"
+          echo "CHAT: $CHAT"
+          echo "MEDIA: $MEDIA"
+          echo "API: $API"
+        env:
+          AUTH: ${{ needs.terraform.outputs.AUTH }}
+          USER: ${{ needs.terraform.outputs.USER }}
+          POST: ${{ needs.terraform.outputs.POST }}
+          NOTIFY: ${{ needs.terraform.outputs.NOTIFY }}
+          CHAT: ${{ needs.terraform.outputs.CHAT }}
+          MEDIA: ${{ needs.terraform.outputs.MEDIA }}
+          API: ${{ needs.terraform.outputs.API }}
+
       - name: Update fallback image tag secrets
         env:
           GH_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
           REPO: ${{ github.repository }}
-          AUTH: ${{ env.AUTH }}
-          USER: ${{ env.USER }}
-          POST: ${{ env.POST }}
-          NOTIFY: ${{ env.NOTIFY }}
-          CHAT: ${{ env.CHAT }}
-          MEDIA: ${{ env.MEDIA }}
-          API: ${{ env.API }}
+          AUTH: ${{ needs.terraform.outputs.AUTH }}
+          USER: ${{ needs.terraform.outputs.USER }}
+          POST: ${{ needs.terraform.outputs.POST }}
+          NOTIFY: ${{ needs.terraform.outputs.NOTIFY }}
+          CHAT: ${{ needs.terraform.outputs.CHAT }}
+          MEDIA: ${{ needs.terraform.outputs.MEDIA }}
+          API: ${{ needs.terraform.outputs.API }}
         run: |
-          echo "$GH_TOKEN" | gh auth login --with-token
           update_secret() {
             local name="$1"
             local value="$2"

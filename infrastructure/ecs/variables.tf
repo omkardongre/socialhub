@@ -37,14 +37,14 @@ variable "ecs_task_cpu" {
 variable "ecs_task_memory" {
   description = "Default memory for ECS tasks"
   type        = string
-  default     = "160"
+  default     = "136"
 }
 
-variable "awslogs_region" {
-  description = "AWS region for CloudWatch logging"
-  type        = string
-  default     = "us-east-1"
-}
+#variable "awslogs_region" {
+#  description = "AWS region for CloudWatch logging"
+#  type        = string
+#  default     = "us-east-1"
+#}
 
 variable "vpc_id" {
   description = "VPC ID for ECS resources"
@@ -75,7 +75,6 @@ variable "ecs_instance_type" {
 variable "key_name" {
   description = "EC2 Key Pair name"
   type        = string
-  default     = "socialhub-key"
 }
 
 variable "repo_creds_arn" {
@@ -119,7 +118,7 @@ variable "api_gateway_image_tag" {
 }
 
 locals {
-  log_group_name = aws_cloudwatch_log_group.ecs.name
+  # log_group_name = aws_cloudwatch_log_group.ecs.name
   repo_creds_arn = var.repo_creds_arn
   env_files_bucket = var.env_files_bucket
   auth_service_image = "ghcr.io/omkardongre/auth-service:${var.auth_service_image_tag}"

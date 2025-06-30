@@ -20,14 +20,14 @@ resource "aws_ecs_task_definition" "auth_service" {
       repositoryCredentials = {
         credentialsParameter = local.repo_creds_arn
       }
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = local.log_group_name
-          awslogs-region        = var.awslogs_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
+#      logConfiguration = {
+#        logDriver = "awslogs"
+#        options = {
+#          awslogs-group         = local.log_group_name
+#          awslogs-region        = var.awslogs_region
+#          awslogs-stream-prefix = "ecs"
+#        }
+#      }
     }
   ])
 }
@@ -52,14 +52,14 @@ resource "aws_ecs_task_definition" "user_service" {
       repositoryCredentials = {
         credentialsParameter = local.repo_creds_arn
       }
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = local.log_group_name
-          awslogs-region        = var.awslogs_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
+#      logConfiguration = {
+#        logDriver = "awslogs"
+#        options = {
+#          awslogs-group         = local.log_group_name
+#          awslogs-region        = var.awslogs_region
+#          awslogs-stream-prefix = "ecs"
+#        }
+#      }
     }
   ])
 }
@@ -84,14 +84,14 @@ resource "aws_ecs_task_definition" "post_service" {
       repositoryCredentials = {
         credentialsParameter = local.repo_creds_arn
       }
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = local.log_group_name
-          awslogs-region        = var.awslogs_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
+#      logConfiguration = {
+#        logDriver = "awslogs"
+#        options = {
+#          awslogs-group         = local.log_group_name
+#          awslogs-region        = var.awslogs_region
+#          awslogs-stream-prefix = "ecs"
+#        }
+#      }
     }
   ])
 }
@@ -116,14 +116,14 @@ resource "aws_ecs_task_definition" "media_service" {
       repositoryCredentials = {
         credentialsParameter = local.repo_creds_arn
       }
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = local.log_group_name
-          awslogs-region        = var.awslogs_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
+#      logConfiguration = {
+#        logDriver = "awslogs"
+#        options = {
+#          awslogs-group         = local.log_group_name
+#          awslogs-region        = var.awslogs_region
+#          awslogs-stream-prefix = "ecs"
+#        }
+#      }
     }
   ])
 }
@@ -148,14 +148,14 @@ resource "aws_ecs_task_definition" "notification_service" {
       repositoryCredentials = {
         credentialsParameter = local.repo_creds_arn
       }
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = local.log_group_name
-          awslogs-region        = var.awslogs_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
+#      logConfiguration = {
+#        logDriver = "awslogs"
+#        options = {
+#          awslogs-group         = local.log_group_name
+#          awslogs-region        = var.awslogs_region
+#          awslogs-stream-prefix = "ecs"
+#        }
+#      }
     }
   ])
 }
@@ -180,14 +180,14 @@ resource "aws_ecs_task_definition" "chat_service" {
       repositoryCredentials = {
         credentialsParameter = local.repo_creds_arn
       }
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = local.log_group_name
-          awslogs-region        = var.awslogs_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
+#      logConfiguration = {
+#        logDriver = "awslogs"
+#        options = {
+#          awslogs-group         = local.log_group_name
+#          awslogs-region        = var.awslogs_region
+#          awslogs-stream-prefix = "ecs"
+#        }
+#      }
     }
   ])
 }
@@ -212,14 +212,14 @@ resource "aws_ecs_task_definition" "api_gateway" {
       repositoryCredentials = {
         credentialsParameter = local.repo_creds_arn
       }
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = local.log_group_name
-          awslogs-region        = var.awslogs_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
+#      logConfiguration = {
+#        logDriver = "awslogs"
+#        options = {
+#          awslogs-group         = local.log_group_name
+#          awslogs-region        = var.awslogs_region
+#          awslogs-stream-prefix = "ecs"
+#        }
+#      }
     }
   ])
 }

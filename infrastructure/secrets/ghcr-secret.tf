@@ -14,7 +14,7 @@ variable "ghcr_pat" {
 }
 
 resource "aws_secretsmanager_secret" "ghcr" {
-  name = "ghcr-credentials-test-4"
+  name = "ghcr-credentials-test-15"
 }
 
 resource "aws_secretsmanager_secret_version" "ghcr" {
