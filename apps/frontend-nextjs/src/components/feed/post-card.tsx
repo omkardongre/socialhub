@@ -34,7 +34,7 @@ export function PostCard({ post }: { post: Post }) {
         {post.mediaUrl && (
           <div className="inline-flex justify-center bg-gray-100 rounded-lg overflow-hidden mb-2">
             <Image
-              src={post.mediaUrl}
+              src={`/api/image?url=${encodeURIComponent(post.mediaUrl)}`}
               alt="post media"
               width={350}
               height={250}
