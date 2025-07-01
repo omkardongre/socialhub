@@ -155,15 +155,6 @@ services:
       postgres:
         condition: service_healthy
 
-  frontend:
-    build:
-      context: .
-      dockerfile: ./apps/frontend-nextjs/Dockerfile
-    ports:
-      - "3007:3000"
-    env_file:
-      - ./apps/frontend-nextjs/.env.local
-
   api-gateway:
     build:
       context: .
