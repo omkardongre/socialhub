@@ -6,4 +6,5 @@ export interface Message {
   isRead: boolean;
   mediaUrl: string | null;
   createdAt: string;
+  senderName?: string;
 }

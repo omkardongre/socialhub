@@ -79,6 +79,8 @@ services:
       - "3001:3000"
     env_file:
       - ./apps/auth-service/.env.local
+    environment:
+      - NODE_ENV=development
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -93,6 +95,8 @@ services:
       - "3002:3000"
     env_file:
       - ./apps/user-service/.env.local
+    environment:
+      - NODE_ENV=development
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -107,6 +111,8 @@ services:
       - "3003:3000"
     env_file:
       - ./apps/post-service/.env.local
+    environment:
+      - NODE_ENV=development
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -121,6 +127,8 @@ services:
       - "3004:3000"
     env_file:
       - ./apps/media-service/.env.local
+    environment:
+      - NODE_ENV=development
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -135,6 +143,8 @@ services:
       - "3005:3000"
     env_file:
       - ./apps/notification-service/.env.local
+    environment:
+      - NODE_ENV=development
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -149,6 +159,8 @@ services:
       - "3006:3000"
     env_file:
       - ./apps/chat-service/.env.local
+    environment:
+      - NODE_ENV=development
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -163,6 +175,8 @@ services:
       - "8082:8082"
     env_file:
       - ./api-gateway/.env.local
+    environment:
+      - NODE_ENV=development
     depends_on:
       - auth-service
       - user-service

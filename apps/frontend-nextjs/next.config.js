@@ -14,7 +14,11 @@ try {
 
 const nextConfig = {
   images: {
-    domains: ["gravatar.com", "socialhub-test.s3.us-east-1.amazonaws.com"],
+    domains: [
+      "gravatar.com",
+      "socialhub-test.s3.us-east-1.amazonaws.com",
+      "socialhub-media-bucket-1.s3.us-east-1.amazonaws.com"
+    ],
   },
   // add any other config options here
 };

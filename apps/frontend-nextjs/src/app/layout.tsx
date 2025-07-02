@@ -29,12 +29,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col h-screen`}
       >
         <AuthProvider>
           <ReactQueryProvider>
-            <Navbar />
-            {children}
+            <header className="fixed top-0 w-full z-50">
+              <Navbar />
+            </header>
+            <main className="flex-1 pt-16 overflow-y-auto">
+              {children}
+            </main>
           </ReactQueryProvider>
           <Toaster />
         </AuthProvider>

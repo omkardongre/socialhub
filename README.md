@@ -52,6 +52,9 @@ SocialHub is a full-stack social media platform built with modern microservices 
 - Terraform 1.5+ (for deployment)
 
 ### Local Development
+
+> **Note:** The default `docker-compose.yml` sets `NODE_ENV=development` for all services. This enables development features, detailed logging, and hot-reloading where supported.
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/omkardongre/socialhub.git
@@ -82,6 +85,8 @@ SocialHub is a full-stack social media platform built with modern microservices 
    - Adminer (DB GUI): http://localhost:8080
 
 ## 📦 Production Deployment
+
+> **Note:** For production, update your environment files or Docker Compose to set `NODE_ENV=production` for all services. This enables production optimizations and disables development-only features.
 
 ### Prerequisites
 - Configure AWS credentials

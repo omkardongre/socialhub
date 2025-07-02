@@ -128,16 +128,16 @@ describe('ChatService', () => {
     it('should return messages if user has access', async () => {
       prisma.chatParticipant.findFirst.mockResolvedValue({});
       prisma.message.findMany.mockResolvedValue([{ id: 1 }]);
-      const result = await service.getRoomMessages('room1', 'user1');
+      const result = await service.getRoomMessages('room1', 'user1', 'token');
       expect(result).toEqual([{ id: 1 }]);
     });
     it('should throw ForbiddenException if user has no access', async () => {
       prisma.chatParticipant.findFirst.mockResolvedValue(null);
-      await expect(service.getRoomMessages('room1', 'user1')).rejects.toThrow(ForbiddenException);
+      await expect(service.getRoomMessages('room1', 'user1', 'token')).rejects.toThrow(ForbiddenException);
     });
     it('should throw BadRequestException on other errors', async () => {
       prisma.chatParticipant.findFirst.mockRejectedValue(new Error('fail'));
-      await expect(service.getRoomMessages('room1', 'user1')).rejects.toThrow(BadRequestException);
+      await expect(service.getRoomMessages('room1', 'user1', 'token')).rejects.toThrow(BadRequestException);
     });
   });
 

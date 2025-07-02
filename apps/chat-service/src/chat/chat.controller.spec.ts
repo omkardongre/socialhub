@@ -45,8 +45,8 @@ describe('ChatController', () => {
       const messages = [{ id: 1, text: 'Hello' }];
       service.getRoomMessages.mockResolvedValue(messages);
 
-      const result = await controller.getRoomMessages(roomId, { user: { userId } });
-      expect(service.getRoomMessages).toHaveBeenCalledWith(roomId, userId);
+      const result = await controller.getRoomMessages(roomId, { user: { userId }, headers: { authorization: 'token' }, cookies: {} });
+      expect(service.getRoomMessages).toHaveBeenCalledWith(roomId, userId, 'token');
       expect(result).toEqual({
         success: true,
         data: messages,
@@ -59,7 +59,7 @@ describe('ChatController', () => {
       const userId = 'user2';
       service.getRoomMessages.mockRejectedValue(new Error('DB error'));
 
-      await expect(controller.getRoomMessages(roomId, { user: { userId } }))
+      await expect(controller.getRoomMessages(roomId, { user: { userId }, headers: { authorization: 'token' }, cookies: {} }))
         .rejects.toThrow(); // Now handled by global filter, will throw the original error
     });
   });

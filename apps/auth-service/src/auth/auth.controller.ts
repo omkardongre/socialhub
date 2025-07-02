@@ -67,12 +67,13 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   async login(@Body() dto: LoginDto, @Res() res: Response) {
     const tokens = await this.authService.login(dto);
+    const isProd = process.env.NODE_ENV === 'production';
     // Set access token as HttpOnly cookie
     res.cookie('token', tokens.access_token, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      domain: '.omkard.site',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd ? '.omkard.site' : undefined,
       path: '/',
       maxAge: 10 * 24 * 60 * 60 * 1000, // 10 days
     });
@@ -157,11 +158,12 @@ export class AuthController {
     await this.prisma.session.deleteMany({
       where: { userId },
     });
+    const isProd = process.env.NODE_ENV === 'production';
     res.clearCookie('token', {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      domain: '.omkard.site',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd ? '.omkard.site' : undefined,
       path: '/',
     });
 

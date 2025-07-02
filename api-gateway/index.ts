@@ -15,7 +15,7 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 
 dotenv.config();
 
-// --- Simple industry-style logger ---
+// Simple industry-style logger
 function log(
   level: "INFO" | "ERROR" | "WARN" | "DEBUG",
   message: string,
@@ -25,7 +25,6 @@ function log(
   const metaString = Object.keys(meta).length
     ? ` | meta: ${JSON.stringify(meta)}`
     : "";
-  // eslint-disable-next-line no-console
   console.log(`[${timestamp}] [${level}] ${message}${metaString}`);
 }
 
@@ -40,7 +39,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
@@ -52,7 +50,7 @@ app.use(
   })
 );
 
-// --- WebSocket Proxy Middleware ---
+// WebSocket Proxy Middleware
 const wsProxy = createProxyMiddleware({
   target: env.CHAT_SERVICE_WS_URL,
   changeOrigin: true,
@@ -83,7 +81,7 @@ const wsProxy = createProxyMiddleware({
 
 app.use("/socket.io", wsProxy);
 
-// --- API Routes ---
+// API Routes
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/users", usersRouter);
@@ -95,7 +93,7 @@ app.use("/api/media", mediaRouter);
 app.use(cookieParser());
 app.use(express.json());
 
-// --- Request logging middleware ---
+// Request logging middleware
 app.use((req, res, next) => {
   log("INFO", "Incoming HTTP request", {
     method: req.method,
@@ -104,7 +102,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- Dummy endpoint for testing ---
+// Dummy endpoint for testing
 app.get("/api/test", (req, res) => {
   res.json({
     message: "API Gateway is working!",
@@ -112,7 +110,6 @@ app.get("/api/test", (req, res) => {
   });
 });
 
-// --- Start server and attach WebSocket upgrade handler ---
 const PORT = env.PORT || 8082;
 const server = app.listen(PORT, () => {
   log("INFO", "API Gateway listening", { port: PORT });
@@ -120,12 +117,3 @@ const server = app.listen(PORT, () => {
 
 // Attach WebSocket upgrade event for proper proxying
 server.on("upgrade", wsProxy.upgrade);
-
-// --- Focused logging for debugging WebSocket flow ---
-// You will see logs for:
-// - HTTP proxying to /chat
-// - WebSocket upgrade attempts
-// - Proxy errors
-// Noisy logs and redundant request logs have been removed for clarity.
-
-// added comment for testing5

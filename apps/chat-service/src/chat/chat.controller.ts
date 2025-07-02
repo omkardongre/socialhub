@@ -40,13 +40,14 @@ export class ChatController {
     status: 400,
     description: 'Failed to fetch messages',
   })
-  async getRoomMessages(
-    @Param('id') roomId: string,
-    @Req() req: { user: { userId: string } },
-  ) {
+  async getRoomMessages(@Param('id') roomId: string, @Req() req) {
+    const authHeader =
+      req.headers['authorization'] ||
+      (req.cookies?.token ? `Bearer ${req.cookies.token}` : undefined);
     const messages = await this.chatService.getRoomMessages(
       roomId,
       req.user.userId,
+      authHeader,
     );
     return {
       success: true,

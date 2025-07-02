@@ -134,7 +134,7 @@ export class ChatService {
     });
   }
 
-  async getRoomMessages(roomId: string, userId: string) {
+  async getRoomMessages(roomId: string, userId: string, authHeader: string) {
     try {
       // Verify user has access to this room
       const hasAccess = await this.prisma.chatParticipant.findFirst({
@@ -145,10 +145,35 @@ export class ChatService {
         throw new ForbiddenException('Access to chat room denied');
       }
 
-      return await this.prisma.message.findMany({
+      const messages = await this.prisma.message.findMany({
         where: { roomId },
         orderBy: { createdAt: 'asc' },
       });
+
+      // Get unique senderIds
+      const senderIds = [...new Set(messages.map((m) => m.senderId))];
+      // Fetch user profiles in parallel
+      const users = await Promise.all(
+        senderIds.map(async (id) => {
+          try {
+            const res = await this.userRestService.getUserProfile(
+              id,
+              authHeader,
+            );
+            // If your user service returns { data: { name: ... } }, adjust accordingly
+            return { id, name: res?.data?.name || res?.name || id };
+          } catch {
+            return { id, name: id };
+          }
+        }),
+      );
+      const idToName = Object.fromEntries(users.map((u) => [u.id, u.name]));
+
+      // Attach senderName to each message
+      return messages.map((msg) => ({
+        ...msg,
+        senderName: idToName[msg.senderId] || msg.senderId,
+      }));
     } catch (error) {
       if (error instanceof ForbiddenException) {
         throw error;

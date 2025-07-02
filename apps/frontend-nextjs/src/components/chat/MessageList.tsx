@@ -54,7 +54,7 @@ export default function MessageList({ roomId, userId }: MessageListProps) {
                     isMe ? "text-white/80" : "text-gray-500"
                   }`}
                 >
-                  {isMe ? "You" : msg.senderId}
+                  {isMe ? "You" : msg.senderName || msg.senderId}
                   <span className="ml-2 text-[10px] text-gray-400">
                     {new Date(msg.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
